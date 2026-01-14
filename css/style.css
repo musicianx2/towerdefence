@@ -263,28 +263,29 @@ body {
 .start-wave-btn .tower-cost { color: rgba(255,255,255,0.8); font-size: 11px; }
 
 /* ============================================
-   ONAY MENÜSÜ
+   ONAY MENÜSÜ - SOL ALT
    ============================================ */
 #confirm-menu {
     position: absolute;
-    top: 320px;
-    right: 10px;
+    bottom: 80px;
+    left: 10px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 10px;
     pointer-events: auto;
     background: rgba(0, 0, 0, 0.9);
-    padding: 14px;
+    padding: 10px;
     border-radius: 12px;
     border: 2px solid #ffd700;
+    z-index: 150;
 }
 
 #confirm-menu.hidden { display: none; }
 
 #confirm-menu button {
-    padding: 14px 24px;
-    min-height: 48px;
-    font-size: 15px;
+    padding: 12px 20px;
+    min-height: 44px;
+    font-size: 14px;
     font-weight: bold;
     border: none;
     border-radius: 10px;
