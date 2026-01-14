@@ -1,7 +1,7 @@
 /**
  * Tower Defense - Tower Class
  * Kule entity'si
- * @version 1.0.0
+ * @version 1.3.0
  */
 
 class Tower {
@@ -21,6 +21,9 @@ class Tower {
         // Piksel pozisyonu
         this.x = col * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
         this.y = row * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
+        
+        // Element
+        this.element = cfg.element || 'neutral';
         
         // Özellikler
         this.damage = cfg.damage;

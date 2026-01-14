@@ -1,7 +1,7 @@
 /**
  * Tower Defense - Projectile Class
  * Mermi entity'si
- * @version 1.0.0
+ * @version 1.3.0
  */
 
 class Projectile {
@@ -10,6 +10,9 @@ class Projectile {
         this.tower = tower;
         this.towerType = tower.type;
         this.targetEnemy = targetEnemy;
+        
+        // Element
+        this.element = tower.element || 'neutral';
         
         // Pozisyon
         this.x = tower.x;
@@ -27,6 +30,9 @@ class Projectile {
         this.burnDamage = tower.config.burnDamage || 0;
         this.burnDuration = tower.config.burnDuration || 0;
         this.chainCount = tower.config.chainCount || 0;
+        this.knockback = tower.config.knockback || 0;
+        this.stunChance = tower.config.stunChance || 0;
+        this.stunDuration = tower.config.stunDuration || 0;
         
         // Durum
         this.alive = true;
@@ -67,8 +73,8 @@ class Projectile {
     hit(enemies) {
         if (!this.targetEnemy) return;
         
-        // Ana hasar
-        this.targetEnemy.takeDamage(this.damage);
+        // Ana hasar (element çarpanı ile)
+        this.targetEnemy.takeDamage(this.damage, this.element);
         
         // Yavaşlatma
         if (this.slowAmount) {
@@ -78,6 +84,16 @@ class Projectile {
         // Yanma
         if (this.burnDamage > 0) {
             this.targetEnemy.applyBurn(this.burnDamage, this.burnDuration);
+        }
+        
+        // Knockback (geri itme)
+        if (this.knockback > 0) {
+            this.targetEnemy.applyKnockback(this.tower.x, this.tower.y, this.knockback);
+        }
+        
+        // Stun (sersemletme)
+        if (this.stunChance > 0 && Math.random() < this.stunChance) {
+            this.targetEnemy.applyStun(this.stunDuration);
         }
         
         // Alan hasarı
@@ -106,7 +122,7 @@ class Projectile {
             
             const dist = Utils.distance(this.targetEnemy.x, this.targetEnemy.y, enemy.x, enemy.y);
             if (dist <= splashRange) {
-                enemy.takeDamage(splashDamage);
+                enemy.takeDamage(splashDamage, this.element);
             }
         }
     }

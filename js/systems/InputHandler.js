@@ -88,6 +88,13 @@ class InputHandler {
     handleMouseDown(e) {
         if (e.button !== 0) return;
         const coords = this.getCanvasCoords(e);
+        
+        // Menüdeyken menü click'lerini işle
+        if (this.game.state === 'menu') {
+            this.game.menuManager.handleClick(coords.x, coords.y);
+            return;
+        }
+        
         this.handleClick(coords.x, coords.y);
     }
     
@@ -95,6 +102,13 @@ class InputHandler {
         e.preventDefault();
         const coords = this.getCanvasCoords(e);
         this.mousePos = coords;
+        
+        // Menüdeyken menü click'lerini işle
+        if (this.game.state === 'menu') {
+            this.game.menuManager.handleClick(coords.x, coords.y);
+            return;
+        }
+        
         const gp = Utils.pixelToGrid(coords.x, coords.y);
         if (Utils.isInBounds(gp.col, gp.row)) {
             this.gridPos = gp;
@@ -117,9 +131,19 @@ class InputHandler {
     }
     
     handleKeyDown(e) {
+        // Menüdeyken tuşları yoksay
+        if (this.game.state === 'menu') return;
+        
         switch (e.key) {
             case 'Escape':
-                this.deselectTower();
+                if (this.selectedTowerType) {
+                    this.deselectTower();
+                } else if (this.game.state === 'preparing' || this.game.state === 'playing') {
+                    // Oyun içinde ESC = menüye dön (onay iste)
+                    if (confirm('Ana menüye dönmek istiyor musun?')) {
+                        this.game.returnToMenu();
+                    }
+                }
                 break;
             case '1':
                 this.selectTower('archer');

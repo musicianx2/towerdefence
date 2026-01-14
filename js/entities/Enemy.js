@@ -1,11 +1,11 @@
 /**
  * Tower Defense - Enemy Class
  * Düşman entity'si
- * @version 1.0.0
+ * @version 1.3.0
  */
 
 class Enemy {
-    constructor(type, path, waveNumber) {
+    constructor(type, path, waveNumber, difficulty = null) {
         const cfg = CONFIG.ENEMIES[type];
         if (!cfg) {
             console.error(`Geçersiz düşman tipi: ${type}`);
@@ -18,17 +18,31 @@ class Enemy {
         this.path = path;
         this.pathIndex = 0;
         
+        // Element
+        this.element = cfg.element || 'neutral';
+        
+        // Dirençler
+        this.slowResist = cfg.slowResist || 0;
+        this.stunResist = cfg.stunResist || 0;
+        this.burnImmune = cfg.burnImmune || false;
+        
         // Başlangıç pozisyonu
         const startPos = path[0];
         this.x = startPos.col * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
         this.y = startPos.row * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
         
-        // Wave'e göre güçlendirme
+        // Zorluk çarpanları
+        const healthMult = difficulty?.enemyHealthMult || 1.0;
+        const speedMult = difficulty?.enemySpeedMult || 1.0;
+        const goldMult = difficulty?.goldMult || 1.0;
+        
+        // Wave'e göre güçlendirme + zorluk
         const scaleFactor = 1 + (waveNumber - 1) * 0.15;
-        this.maxHealth = Math.floor(cfg.health * scaleFactor);
+        this.maxHealth = Math.floor(cfg.health * scaleFactor * healthMult);
         this.health = this.maxHealth;
-        this.speed = cfg.speed * CONFIG.GRID.CELL_SIZE;
-        this.reward = Math.floor(cfg.reward * scaleFactor);
+        this.baseSpeed = cfg.speed * CONFIG.GRID.CELL_SIZE * speedMult;
+        this.speed = this.baseSpeed;
+        this.reward = Math.floor(cfg.reward * scaleFactor * goldMult);
         this.damage = cfg.damage;
         this.color = cfg.color;
         this.size = cfg.size;
@@ -43,6 +57,9 @@ class Enemy {
         this.slowTimer = 0;
         this.burnDamage = 0;
         this.burnTimer = 0;
+        this.stunTimer = 0;
+        this.knockbackX = 0;
+        this.knockbackY = 0;
         
         // Hedef
         this.targetX = this.x;
@@ -70,6 +87,12 @@ class Enemy {
     update(deltaTime) {
         if (!this.alive || this.reachedEnd) return;
         
+        // Stun efekti - hareket etme
+        if (this.stunTimer > 0) {
+            this.stunTimer -= deltaTime * 1000;
+            return;
+        }
+        
         // Yavaşlama efekti
         if (this.slowTimer > 0) {
             this.slowTimer -= deltaTime * 1000;
@@ -79,9 +102,19 @@ class Enemy {
         }
         
         // Yanma hasarı
-        if (this.burnTimer > 0) {
+        if (this.burnTimer > 0 && !this.burnImmune) {
             this.burnTimer -= deltaTime * 1000;
             this.takeDamage(this.burnDamage * deltaTime);
+        }
+        
+        // Knockback
+        if (this.knockbackX !== 0 || this.knockbackY !== 0) {
+            this.x += this.knockbackX * deltaTime * 100;
+            this.y += this.knockbackY * deltaTime * 100;
+            this.knockbackX *= 0.9;
+            this.knockbackY *= 0.9;
+            if (Math.abs(this.knockbackX) < 0.1) this.knockbackX = 0;
+            if (Math.abs(this.knockbackY) < 0.1) this.knockbackY = 0;
         }
         
         // Hareket
@@ -92,37 +125,69 @@ class Enemy {
         if (dist < 2) {
             this.updateTarget();
         } else {
-            const moveSpeed = this.speed * this.slowAmount * deltaTime;
+            const moveSpeed = this.baseSpeed * this.slowAmount * deltaTime;
             this.x += (dx / dist) * moveSpeed;
             this.y += (dy / dist) * moveSpeed;
         }
     }
     
     /**
-     * Hasar alır
+     * Hasar alır (element çarpanı ile)
      */
-    takeDamage(amount) {
-        this.health -= amount;
+    takeDamage(amount, attackerElement = 'neutral') {
+        // Element çarpanı uygula
+        const multiplier = CONFIG.DAMAGE_MATRIX[attackerElement]?.[this.element] || 1.0;
+        const finalDamage = amount * multiplier;
+        
+        this.health -= finalDamage;
         if (this.health <= 0) {
             this.health = 0;
             this.alive = false;
         }
+        
+        return { damage: finalDamage, multiplier };
     }
     
     /**
      * Yavaşlatma uygular
      */
     applySlow(amount, duration) {
-        this.slowAmount = amount;
-        this.slowTimer = duration;
+        // Slow resist uygula
+        const effectiveAmount = amount + (1 - amount) * this.slowResist;
+        this.slowAmount = Math.min(this.slowAmount, effectiveAmount);
+        this.slowTimer = Math.max(this.slowTimer, duration * (1 - this.slowResist));
     }
     
     /**
      * Yanma uygular
      */
     applyBurn(damagePerSecond, duration) {
+        if (this.burnImmune) return;
         this.burnDamage = damagePerSecond;
         this.burnTimer = duration;
+    }
+    
+    /**
+     * Sersemletme uygular
+     */
+    applyStun(duration) {
+        const effectiveDuration = duration * (1 - this.stunResist);
+        if (effectiveDuration > 0) {
+            this.stunTimer = Math.max(this.stunTimer, effectiveDuration);
+        }
+    }
+    
+    /**
+     * Geri itme uygular
+     */
+    applyKnockback(fromX, fromY, force) {
+        const dx = this.x - fromX;
+        const dy = this.y - fromY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 0) {
+            this.knockbackX = (dx / dist) * force;
+            this.knockbackY = (dy / dist) * force;
+        }
     }
     
     /**

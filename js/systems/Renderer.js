@@ -9,6 +9,11 @@ class Renderer {
         this.canvas = canvas;
         this.ctx = ctx;
         this.cellSize = CONFIG.GRID.CELL_SIZE;
+        this.theme = CONFIG.THEMES.summer; // Varsayılan tema
+    }
+    
+    setTheme(theme) {
+        this.theme = theme;
     }
     
     clear() {
@@ -16,7 +21,7 @@ class Renderer {
     }
     
     drawBackground() {
-        this.ctx.fillStyle = CONFIG.COLORS.EMPTY;
+        this.ctx.fillStyle = this.theme.EMPTY || CONFIG.COLORS.EMPTY;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
     
@@ -41,22 +46,121 @@ class Renderer {
             case CONFIG.CELL_TYPES.WATER: this.drawWater(x, y, size); break;
             case CONFIG.CELL_TYPES.SPAWN: this.drawSpawn(x, y, size); break;
             case CONFIG.CELL_TYPES.BASE: this.drawBase(x, y, size); break;
+            case CONFIG.CELL_TYPES.ROCK: this.drawRock(x, y, size); break;
+            case CONFIG.CELL_TYPES.ICE: this.drawIce(x, y, size); break;
+            case CONFIG.CELL_TYPES.LAVA: this.drawLava(x, y, size); break;
+            case CONFIG.CELL_TYPES.SAND: this.drawSand(x, y, size); break;
+            case CONFIG.CELL_TYPES.CACTUS: this.drawCactus(x, y, size); break;
         }
     }
     
-    drawPath(x, y, size) {
-        this.ctx.fillStyle = CONFIG.COLORS.PATH;
+    drawLava(x, y, size) {
+        // Lava base
+        this.ctx.fillStyle = this.theme.LAVA || '#ff4500';
         this.ctx.fillRect(x, y, size, size);
-        this.ctx.fillStyle = CONFIG.COLORS.PATH_BORDER;
+        // Parlak noktalar
+        this.ctx.fillStyle = this.theme.LAVA_LIGHT || '#ff6a00';
+        this.ctx.beginPath();
+        this.ctx.arc(x + 8, y + 10, 4, 0, Math.PI * 2);
+        this.ctx.arc(x + 22, y + 20, 3, 0, Math.PI * 2);
+        this.ctx.arc(x + 14, y + 26, 5, 0, Math.PI * 2);
+        this.ctx.fill();
+        // Karanlık noktalar
+        this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        this.ctx.beginPath();
+        this.ctx.arc(x + 18, y + 8, 3, 0, Math.PI * 2);
+        this.ctx.arc(x + 6, y + 22, 4, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+    
+    drawSand(x, y, size) {
+        this.ctx.fillStyle = this.theme.SAND || '#e8d4a8';
+        this.ctx.fillRect(x, y, size, size);
+        // Kum dalgaları
+        this.ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 2, y + 10);
+        this.ctx.quadraticCurveTo(x + 16, y + 6, x + 30, y + 10);
+        this.ctx.moveTo(x + 2, y + 22);
+        this.ctx.quadraticCurveTo(x + 16, y + 26, x + 30, y + 22);
+        this.ctx.stroke();
+    }
+    
+    drawCactus(x, y, size) {
+        const cx = x + size / 2, cy = y + size / 2;
+        // Gövde
+        this.ctx.fillStyle = this.theme.CACTUS || '#228b22';
+        this.ctx.fillRect(cx - 4, cy - 10, 8, 20);
+        // Kollar
+        this.ctx.fillRect(cx - 12, cy - 4, 8, 6);
+        this.ctx.fillRect(cx - 12, cy - 10, 4, 8);
+        this.ctx.fillRect(cx + 4, cy, 8, 6);
+        this.ctx.fillRect(cx + 8, cy - 6, 4, 8);
+        // Dikenler
+        this.ctx.fillStyle = '#1a5a1a';
+        for (let i = 0; i < 5; i++) {
+            this.ctx.fillRect(cx - 3 + (i % 2) * 4, cy - 8 + i * 4, 2, 2);
+        }
+    }
+    
+    drawRock(x, y, size) {
+        const cx = x + size / 2, cy = y + size / 2;
+        this.ctx.fillStyle = this.theme.ROCK || '#808080';
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx - 10, cy + 8);
+        this.ctx.lineTo(cx - 8, cy - 6);
+        this.ctx.lineTo(cx + 2, cy - 10);
+        this.ctx.lineTo(cx + 12, cy - 4);
+        this.ctx.lineTo(cx + 10, cy + 10);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.fillStyle = Utils.lightenColor(this.theme.ROCK || '#808080', 20);
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx - 6, cy - 4);
+        this.ctx.lineTo(cx, cy - 8);
+        this.ctx.lineTo(cx + 6, cy - 2);
+        this.ctx.lineTo(cx + 2, cy + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+    
+    drawIce(x, y, size) {
+        // Donmuş su
+        this.ctx.fillStyle = this.theme.ICE || '#b0e0e6';
+        this.ctx.fillRect(x, y, size, size);
+        // Parlama efekti
+        this.ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 5, y + 5);
+        this.ctx.lineTo(x + 15, y + 5);
+        this.ctx.lineTo(x + 10, y + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        // Çatlak çizgileri
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 8, y + 15);
+        this.ctx.lineTo(x + 20, y + 25);
+        this.ctx.moveTo(x + 22, y + 10);
+        this.ctx.lineTo(x + 28, y + 20);
+        this.ctx.stroke();
+    }
+    
+    drawPath(x, y, size) {
+        this.ctx.fillStyle = this.theme.PATH || CONFIG.COLORS.PATH;
+        this.ctx.fillRect(x, y, size, size);
+        this.ctx.fillStyle = this.theme.PATH_BORDER || CONFIG.COLORS.PATH_BORDER;
         this.ctx.fillRect(x, y, size, 3);
         this.ctx.fillRect(x, y + size - 3, size, 3);
     }
     
     drawTree(x, y, size) {
         const cx = x + size / 2, cy = y + size / 2;
-        this.ctx.fillStyle = CONFIG.COLORS.TREE_TRUNK;
+        this.ctx.fillStyle = this.theme.TREE_TRUNK || CONFIG.COLORS.TREE_TRUNK;
         this.ctx.fillRect(cx - 3, cy + 2, 6, 10);
-        this.ctx.fillStyle = CONFIG.COLORS.TREE;
+        this.ctx.fillStyle = this.theme.TREE || CONFIG.COLORS.TREE;
         this.ctx.beginPath();
         this.ctx.moveTo(cx, cy - 12);
         this.ctx.lineTo(cx - 12, cy + 4);
@@ -69,12 +173,22 @@ class Renderer {
         this.ctx.lineTo(cx + 9, cy - 4);
         this.ctx.closePath();
         this.ctx.fill();
+        
+        // Kış temasında kar ekle
+        if (this.theme.SNOW) {
+            this.ctx.fillStyle = '#fff';
+            this.ctx.beginPath();
+            this.ctx.arc(cx - 5, cy - 8, 3, 0, Math.PI * 2);
+            this.ctx.arc(cx + 5, cy - 5, 2, 0, Math.PI * 2);
+            this.ctx.arc(cx, cy - 14, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
     }
     
     drawWater(x, y, size) {
-        this.ctx.fillStyle = CONFIG.COLORS.WATER;
+        this.ctx.fillStyle = this.theme.WATER || CONFIG.COLORS.WATER;
         this.ctx.fillRect(x, y, size, size);
-        this.ctx.fillStyle = CONFIG.COLORS.WATER_LIGHT;
+        this.ctx.fillStyle = this.theme.WATER_LIGHT || CONFIG.COLORS.WATER_LIGHT;
         const time = Date.now();
         for (let i = 0; i < 3; i++) {
             const wx = x + ((i * 10 + time / 500) % size);
@@ -82,6 +196,18 @@ class Renderer {
             this.ctx.beginPath();
             this.ctx.arc(wx, wy, 3, 0, Math.PI);
             this.ctx.fill();
+        }
+        
+        // Kış temasında buz efekti
+        if (this.theme.ICE) {
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + 5, y + 5);
+            this.ctx.lineTo(x + size - 5, y + size - 5);
+            this.ctx.moveTo(x + size - 5, y + 5);
+            this.ctx.lineTo(x + 5, y + size - 5);
+            this.ctx.stroke();
         }
     }
     

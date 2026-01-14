@@ -23,6 +23,15 @@
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
         
+        <!-- Mobil İsim Girişi (gizli input) -->
+        <input type="text" id="mobile-name-input" 
+               placeholder="İsim gir..." 
+               maxlength="15" 
+               autocomplete="off"
+               autocapitalize="off"
+               autocorrect="off"
+               spellcheck="false">
+        
         <div id="ui-overlay">
             <!-- Üst Bilgi Barı -->
             <div id="top-bar">
@@ -31,8 +40,8 @@
                 <span id="lives-display">❤️ 10</span>
             </div>
             
-            <!-- Kule Paneli -->
-            <div id="tower-panel">
+            <!-- Kule Paneli (başlangıçta gizli) -->
+            <div id="tower-panel" class="hidden">
                 <div id="tower-toggle" title="Kule Menüsü (T)">🏰</div>
                 <div id="tower-menu">
                     <div id="tower-menu-title">KULELER</div>
@@ -86,13 +95,15 @@
     <!-- JavaScript Modülleri -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/maps/map1.js"></script>
+    <script src="js/maps/maps.js"></script>
     <script src="js/systems/Grid.js"></script>
+    <script src="js/systems/PlayerManager.js"></script>
     <script src="js/entities/Enemy.js"></script>
     <script src="js/entities/Tower.js"></script>
     <script src="js/entities/Projectile.js"></script>
     <script src="js/systems/WaveManager.js"></script>
     <script src="js/systems/Renderer.js"></script>
+    <script src="js/systems/MenuManager.js"></script>
     <script src="js/systems/InputHandler.js"></script>
     <script src="js/Game.js"></script>
     <script src="js/main.js"></script>
