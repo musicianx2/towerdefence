@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Tower Defense - Strateji Oyunu">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TD Game">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/images/icon-32.svg">
+    <link rel="apple-touch-icon" href="assets/images/icon-192.svg">
+    
+    <title>Tower Defense</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="ui-overlay">
+            <!-- Üst Bilgi Barı -->
+            <div id="top-bar">
+                <span id="gold-display">💰 150</span>
+                <span id="wave-display">📢 Wave: 0/15</span>
+                <span id="lives-display">❤️ 10</span>
+            </div>
+            
+            <!-- Kule Paneli -->
+            <div id="tower-panel">
+                <div id="tower-toggle" title="Kule Menüsü (T)">🏰</div>
+                <div id="tower-menu">
+                    <div id="tower-menu-title">KULELER</div>
+                    <div class="tower-option" data-tower="archer">
+                        <span class="tower-icon">🏹</span>
+                        <div class="tower-info">
+                            <span class="tower-name">Okçu</span>
+                            <span class="tower-cost">💰 50</span>
+                        </div>
+                    </div>
+                    <div class="tower-option" data-tower="cannon">
+                        <span class="tower-icon">💣</span>
+                        <div class="tower-info">
+                            <span class="tower-name">Top</span>
+                            <span class="tower-cost">💰 100</span>
+                        </div>
+                    </div>
+                    <div class="tower-option" data-tower="ice">
+                        <span class="tower-icon">❄️</span>
+                        <div class="tower-info">
+                            <span class="tower-name">Buz</span>
+                            <span class="tower-cost">💰 75</span>
+                        </div>
+                    </div>
+                    <div class="menu-divider"></div>
+                    <div class="start-wave-btn" id="start-wave-btn">
+                        <span class="tower-icon">▶️</span>
+                        <div class="tower-info">
+                            <span class="tower-name">BAŞLAT</span>
+                            <span class="tower-cost">Space</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Onay Menüsü -->
+            <div id="confirm-menu" class="hidden">
+                <button id="confirm-btn">✓ Onayla</button>
+                <button id="cancel-btn">✗ İptal</button>
+            </div>
+        </div>
+        
+        <!-- PWA Install Banner -->
+        <div id="install-banner" class="hidden">
+            <span>📱 Uygulamayı yükle!</span>
+            <button id="install-btn">Yükle</button>
+            <button id="install-close">✕</button>
+        </div>
+    </div>
+
+    <!-- JavaScript Modülleri -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/maps/map1.js"></script>
+    <script src="js/systems/Grid.js"></script>
+    <script src="js/entities/Enemy.js"></script>
+    <script src="js/entities/Tower.js"></script>
+    <script src="js/entities/Projectile.js"></script>
+    <script src="js/systems/WaveManager.js"></script>
+    <script src="js/systems/Renderer.js"></script>
+    <script src="js/systems/InputHandler.js"></script>
+    <script src="js/Game.js"></script>
+    <script src="js/main.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
