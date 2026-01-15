@@ -4,8 +4,8 @@
  */
 
 const CONFIG = {
-    VERSION: '1.3.3',
-    BUILD: '20250115-01',
+    VERSION: '1.7.1',
+    BUILD: '20250115-09',
     
     CANVAS: { WIDTH: 800, HEIGHT: 600 },
     GRID: { CELL_SIZE: 32, COLS: 25, ROWS: 18 },
@@ -83,18 +83,24 @@ const CONFIG = {
         easy: {
             id: 'easy', name: 'Kolay', icon: '⭐',
             enemyHealthMult: 1.0, enemySpeedMult: 0.9, goldMult: 1.2,
-            prepTime: 20, startingGold: 200, startingLives: 15
+            prepTime: 20, goldMultiplier: 1.3, startingLives: 15
         },
         normal: {
             id: 'normal', name: 'Orta', icon: '⭐⭐',
             enemyHealthMult: 1.3, enemySpeedMult: 1.0, goldMult: 1.0,
-            prepTime: 15, startingGold: 150, startingLives: 10
+            prepTime: 15, goldMultiplier: 1.0, startingLives: 10
         },
         hard: {
             id: 'hard', name: 'Zor', icon: '⭐⭐⭐',
             enemyHealthMult: 1.6, enemySpeedMult: 1.1, goldMult: 0.8,
-            prepTime: 10, startingGold: 100, startingLives: 5
+            prepTime: 10, goldMultiplier: 0.7, startingLives: 5
         }
+    },
+    
+    // ==================== OYUN MODLARI ====================
+    GAME_MODES: {
+        classic: { id: 'classic', name: 'Klasik', icon: '🎮', waves: 15, endless: false },
+        endless: { id: 'endless', name: 'Sonsuz', icon: '♾️', waves: 999, endless: true }
     },
     
     GAME: { STARTING_GOLD: 150, STARTING_LIVES: 10, MAX_WAVES: 15, PREPARATION_TIME: 15 },
@@ -155,23 +161,78 @@ const CONFIG = {
         basic: { id: 'basic', name: 'Goblin', element: 'neutral', health: 30, speed: 1.5, reward: 10, damage: 1, color: '#90EE90', size: 12, powerLevel: 1 },
         fast: { id: 'fast', name: 'Kurt', element: 'neutral', health: 20, speed: 2.5, reward: 15, damage: 1, color: '#A0A0A0', size: 10, powerLevel: 1 },
         tank: { id: 'tank', name: 'Ogre', element: 'neutral', health: 100, speed: 0.8, reward: 25, damage: 1, color: '#8B4513', size: 16, powerLevel: 2 },
-        boss: { id: 'boss', name: 'Troll', element: 'neutral', health: 250, speed: 0.6, reward: 100, damage: 2, color: '#4B0082', size: 20, powerLevel: 4 },
+        boss: { id: 'boss', name: 'Troll', element: 'neutral', health: 250, speed: 0.6, reward: 100, damage: 2, color: '#4B0082', size: 20, powerLevel: 4, 
+            isBoss: true, bossAbility: 'shield', shieldCooldown: 8000, shieldDuration: 3000 },
         
         // Ice
         frost: { id: 'frost', name: 'Buz Golemi', element: 'ice', health: 80, speed: 1.0, reward: 30, damage: 1, color: '#87CEEB', size: 14, powerLevel: 2, slowResist: 0.5 },
-        yeti: { id: 'yeti', name: 'Yeti', element: 'ice', health: 400, speed: 0.5, reward: 150, damage: 3, color: '#E0FFFF', size: 22, powerLevel: 5 },
+        yeti: { id: 'yeti', name: 'Yeti', element: 'ice', health: 400, speed: 0.5, reward: 150, damage: 3, color: '#E0FFFF', size: 22, powerLevel: 5,
+            isBoss: true, bossAbility: 'split', splitCount: 2, splitType: 'frost' },
         
         // Fire
         imp: { id: 'imp', name: 'Ateş İblisi', element: 'fire', health: 60, speed: 1.8, reward: 25, damage: 1, color: '#FF6347', size: 11, powerLevel: 2, burnImmune: true },
-        lava_giant: { id: 'lava_giant', name: 'Lav Devi', element: 'fire', health: 350, speed: 0.4, reward: 140, damage: 3, color: '#FF4500', size: 24, powerLevel: 5, burnImmune: true },
+        lava_giant: { id: 'lava_giant', name: 'Lav Devi', element: 'fire', health: 350, speed: 0.4, reward: 140, damage: 3, color: '#FF4500', size: 24, powerLevel: 5, burnImmune: true,
+            isBoss: true, bossAbility: 'teleport', teleportCooldown: 10000 },
         
         // Wind
         fairy: { id: 'fairy', name: 'Hava Perisi', element: 'wind', health: 40, speed: 2.2, reward: 20, damage: 1, color: '#98FB98', size: 9, powerLevel: 1 },
-        storm_lord: { id: 'storm_lord', name: 'Fırtına Lordu', element: 'wind', health: 300, speed: 0.7, reward: 130, damage: 2, color: '#4682B4', size: 20, powerLevel: 4 },
+        storm_lord: { id: 'storm_lord', name: 'Fırtına Lordu', element: 'wind', health: 300, speed: 0.7, reward: 130, damage: 2, color: '#4682B4', size: 20, powerLevel: 4,
+            isBoss: true, bossAbility: 'shield', shieldCooldown: 6000, shieldDuration: 2500 },
         
         // Earth
         rock_golem: { id: 'rock_golem', name: 'Kaya Golemi', element: 'earth', health: 150, speed: 0.6, reward: 35, damage: 1, color: '#696969', size: 16, powerLevel: 3, stunResist: 0.5 },
-        earth_titan: { id: 'earth_titan', name: 'Toprak Titanı', element: 'earth', health: 500, speed: 0.3, reward: 200, damage: 4, color: '#8B7355', size: 26, powerLevel: 6, stunResist: 0.8 }
+        earth_titan: { id: 'earth_titan', name: 'Toprak Titanı', element: 'earth', health: 500, speed: 0.3, reward: 200, damage: 4, color: '#8B7355', size: 26, powerLevel: 6, stunResist: 0.8,
+            isBoss: true, bossAbility: 'split', splitCount: 3, splitType: 'rock_golem' }
+    },
+    
+    // ==================== ÖZEL YETENEKLER ====================
+    ABILITIES: {
+        meteor: {
+            id: 'meteor', name: 'Meteor', icon: '☄️',
+            cost: 100, cooldown: 30000,
+            damage: 150, radius: 2,
+            description: 'Seçilen alana büyük hasar'
+        },
+        freeze: {
+            id: 'freeze', name: 'Dondurucu Dalga', icon: '🌊',
+            cost: 75, cooldown: 25000,
+            slowAmount: 0.3, duration: 4000,
+            description: 'Tüm düşmanları yavaşlatır'
+        },
+        goldRush: {
+            id: 'goldRush', name: 'Altın Yağmuru', icon: '💎',
+            cost: 50, cooldown: 45000,
+            goldBonus: 150,
+            description: 'Anında +150 altın'
+        },
+        repair: {
+            id: 'repair', name: 'Tamir', icon: '🔧',
+            cost: 60, cooldown: 40000,
+            healAmount: 5,
+            description: '+5 can geri kazan'
+        }
+    },
+    
+    // ==================== SES EFEKTLERİ ====================
+    SOUNDS: {
+        enabled: true,
+        volume: 0.15, // Düşük varsayılan
+        effects: {
+            shoot: { frequency: 800, duration: 0.05, type: 'square' },
+            hit: { frequency: 200, duration: 0.1, type: 'sawtooth' },
+            explosion: { frequency: 100, duration: 0.2, type: 'sawtooth', decay: true },
+            enemyDeath: { frequency: 300, duration: 0.15, type: 'triangle' },
+            towerPlace: { frequency: 500, duration: 0.1, type: 'sine' },
+            upgrade: { frequency: 600, duration: 0.15, type: 'sine', rise: true },
+            gold: { frequency: 1000, duration: 0.08, type: 'sine' },
+            damage: { frequency: 150, duration: 0.2, type: 'sawtooth' },
+            victory: { frequency: 800, duration: 0.3, type: 'sine', rise: true },
+            defeat: { frequency: 200, duration: 0.4, type: 'sawtooth', decay: true },
+            wave: { frequency: 400, duration: 0.2, type: 'square' },
+            ability: { frequency: 700, duration: 0.15, type: 'triangle' },
+            shield: { frequency: 500, duration: 0.25, type: 'sine' },
+            teleport: { frequency: 1200, duration: 0.1, type: 'sine', decay: true }
+        }
     },
     
     POWER_SYMBOLS: ['•', '••', '•••', '★', '★★', '✦'],

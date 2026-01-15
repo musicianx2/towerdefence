@@ -93,6 +93,7 @@ class Tower {
         if (!this.targetEnemy || !this.targetEnemy.alive) return null;
         
         this.lastFireTime = currentTime;
+        soundManager.play('shoot');
         
         // Mermi oluştur
         return new Projectile(this, this.targetEnemy);
@@ -120,18 +121,66 @@ class Tower {
         if (this.level >= this.maxLevel) return false;
         
         this.level++;
-        this.damage = Math.floor(this.config.damage * (1 + this.level * 0.3));
-        this.range = this.config.range + (this.level - 1) * 0.5;
-        this.fireRate = Math.floor(this.config.fireRate * (1 - this.level * 0.1));
+        
+        // Seviye bonusları: Lv2 = +30%, Lv3 = +60%
+        const damageMultiplier = 1 + (this.level - 1) * 0.30;
+        const rangeMultiplier = 1 + (this.level - 1) * 0.15;
+        const fireRateMultiplier = 1 - (this.level - 1) * 0.12;
+        
+        this.damage = Math.floor(this.config.damage * damageMultiplier);
+        this.range = this.config.range * rangeMultiplier;
+        this.fireRate = Math.floor(this.config.fireRate * fireRateMultiplier);
         
         return true;
     }
     
     /**
-     * Upgrade maliyetini hesaplar
+     * Yükseltme maliyetini hesaplar
      */
     getUpgradeCost() {
-        return Math.floor(this.config.cost * this.level * 0.75);
+        if (this.level >= this.maxLevel) return null;
+        
+        // Lv2: %75, Lv3: %100 kule fiyatı
+        const costMultiplier = this.level === 1 ? 0.75 : 1.0;
+        return Math.floor(this.config.cost * costMultiplier);
+    }
+    
+    /**
+     * Satış fiyatını hesaplar (zorluk bazlı)
+     */
+    getSellPrice(difficulty = null) {
+        // Toplam harcanan: Kule fiyatı + upgrade maliyetleri
+        let totalSpent = this.config.cost;
+        if (this.level >= 2) totalSpent += Math.floor(this.config.cost * 0.75);
+        if (this.level >= 3) totalSpent += this.config.cost;
+        
+        // Zorluk bazlı geri kazanım
+        let refundRate = 0.75; // Default orta
+        if (difficulty) {
+            if (difficulty.id === 'easy') refundRate = 1.0;
+            else if (difficulty.id === 'normal') refundRate = 0.75;
+            else if (difficulty.id === 'hard') refundRate = 0.5;
+        }
+        
+        return Math.floor(totalSpent * refundRate);
+    }
+    
+    /**
+     * Kule bilgilerini döndürür
+     */
+    getInfo(difficulty = null) {
+        return {
+            name: this.config.name,
+            icon: this.config.icon,
+            level: this.level,
+            maxLevel: this.maxLevel,
+            damage: this.damage,
+            range: this.range.toFixed(1),
+            fireRate: (this.fireRate / 1000).toFixed(1) + 's',
+            element: this.element,
+            upgradeCost: this.getUpgradeCost(),
+            sellPrice: this.getSellPrice(difficulty)
+        };
     }
     
     /**

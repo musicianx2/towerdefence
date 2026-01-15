@@ -149,6 +149,36 @@ class PlayerManager {
     }
     
     /**
+     * Endless mod skoru kaydet
+     */
+    saveEndlessScore(mapId, wave, difficultyId) {
+        const player = this.getCurrentPlayer();
+        if (!player) return;
+        
+        // Endless skorları için ayrı obje
+        if (!player.endlessScores) player.endlessScores = {};
+        if (!player.endlessScores[mapId]) player.endlessScores[mapId] = {};
+        
+        const currentBest = player.endlessScores[mapId][difficultyId] || 0;
+        if (wave > currentBest) {
+            player.endlessScores[mapId][difficultyId] = wave;
+            console.log(`Yeni endless rekor! ${mapId} (${difficultyId}): Wave ${wave}`);
+        }
+        
+        player.lastPlayed = new Date().toISOString();
+        this.savePlayers();
+    }
+    
+    /**
+     * Endless highscore getir
+     */
+    getEndlessHighscore(mapId, difficultyId) {
+        const player = this.getCurrentPlayer();
+        if (!player || !player.endlessScores) return 0;
+        return player.endlessScores[mapId]?.[difficultyId] || 0;
+    }
+    
+    /**
      * Harita açık mı kontrol et
      */
     isMapUnlocked(mapId) {

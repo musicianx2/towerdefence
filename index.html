@@ -33,11 +33,30 @@
                spellcheck="false">
         
         <div id="ui-overlay">
-            <!-- Üst Bilgi Barı -->
-            <div id="top-bar">
+            <!-- Üst Bilgi Barı - Sadece oyun sırasında -->
+            <div id="top-bar" class="hidden">
                 <span id="gold-display">💰 150</span>
-                <span id="wave-display">📢 Wave: 0/15</span>
-                <span id="lives-display">❤️ 10</span>
+                <div id="center-info">
+                    <span id="wave-display">📢 Wave: 0/15</span>
+                    <button id="speed-btn" class="speed-btn speed-1x" title="Hız (H)">1x</button>
+                </div>
+                <div id="right-controls">
+                    <button id="sound-btn" class="sound-btn" title="Ses Ayarı">🔊</button>
+                    <span id="lives-display">❤️ 10</span>
+                </div>
+            </div>
+            
+            <!-- Ses Ayar Menüsü -->
+            <div id="sound-menu" class="hidden">
+                <div class="sound-menu-title">🔊 Ses Ayarları</div>
+                <div class="sound-row">
+                    <span>Ses:</span>
+                    <input type="range" id="volume-slider" min="0" max="100" value="15">
+                    <span id="volume-value">15%</span>
+                </div>
+                <div class="sound-row">
+                    <button id="mute-btn" class="mute-btn">🔇 Sessize Al</button>
+                </div>
             </div>
             
             <!-- Kule Paneli (başlangıçta gizli) -->
@@ -105,10 +124,51 @@
                 </div>
             </div>
             
-            <!-- Onay Menüsü -->
+            <!-- Onay Menüsü (Yeni kule yerleştirme) -->
             <div id="confirm-menu" class="hidden">
                 <button id="confirm-btn">✓ Onayla</button>
                 <button id="cancel-btn">✗ İptal</button>
+            </div>
+            
+            <!-- Kule Bilgi/Upgrade Menüsü -->
+            <div id="tower-info-menu" class="hidden">
+                <div id="tower-info-header">
+                    <span id="tower-info-icon">🏹</span>
+                    <div>
+                        <span id="tower-info-name">Okçu Kulesi</span>
+                        <span id="tower-info-level">Lv.1</span>
+                    </div>
+                </div>
+                <div id="tower-info-stats">
+                    <div class="stat-row"><span>⚔️ Hasar:</span><span id="stat-damage">10</span></div>
+                    <div class="stat-row"><span>🎯 Menzil:</span><span id="stat-range">3.0</span></div>
+                    <div class="stat-row"><span>⏱️ Hız:</span><span id="stat-firerate">1.0s</span></div>
+                </div>
+                <div id="tower-info-buttons">
+                    <button id="upgrade-btn" class="upgrade-btn">⬆️ Yükselt<br><span id="upgrade-cost">💰 38</span></button>
+                    <button id="sell-btn" class="sell-btn">💰 Sat<br><span id="sell-price">30</span></button>
+                </div>
+                <button id="close-info-btn">✕ Kapat</button>
+            </div>
+            
+            <!-- Özel Yetenekler Çubuğu -->
+            <div id="abilities-bar">
+                <div class="ability-btn" data-ability="meteor" title="Meteor (100💰)">
+                    <span class="ability-icon">☄️</span>
+                    <div class="ability-cooldown"></div>
+                </div>
+                <div class="ability-btn" data-ability="freeze" title="Dondurucu Dalga (75💰)">
+                    <span class="ability-icon">🌊</span>
+                    <div class="ability-cooldown"></div>
+                </div>
+                <div class="ability-btn" data-ability="goldRush" title="Altın Yağmuru (50💰)">
+                    <span class="ability-icon">💎</span>
+                    <div class="ability-cooldown"></div>
+                </div>
+                <div class="ability-btn" data-ability="repair" title="Tamir (60💰)">
+                    <span class="ability-icon">🔧</span>
+                    <div class="ability-cooldown"></div>
+                </div>
             </div>
         </div>
         
@@ -126,6 +186,8 @@
     <script src="js/maps/maps.js"></script>
     <script src="js/systems/Grid.js"></script>
     <script src="js/systems/PlayerManager.js"></script>
+    <script src="js/systems/SoundManager.js"></script>
+    <script src="js/systems/ParticleSystem.js"></script>
     <script src="js/entities/Enemy.js"></script>
     <script src="js/entities/Tower.js"></script>
     <script src="js/entities/Projectile.js"></script>

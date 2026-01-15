@@ -3,7 +3,7 @@
  * Offline çalışma ve cache yönetimi
  */
 
-const CACHE_NAME = 'td-game-v1.3.3';
+const CACHE_NAME = 'td-game-v1.7.1';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -11,14 +11,18 @@ const ASSETS_TO_CACHE = [
     '/css/style.css',
     '/js/config.js',
     '/js/utils.js',
-    '/js/maps/map1.js',
+    '/js/maps/maps.js',
     '/js/systems/Grid.js',
+    '/js/systems/SoundManager.js',
+    '/js/systems/ParticleSystem.js',
+    '/js/systems/PlayerManager.js',
     '/js/entities/Enemy.js',
     '/js/entities/Tower.js',
     '/js/entities/Projectile.js',
     '/js/systems/WaveManager.js',
     '/js/systems/Renderer.js',
     '/js/systems/InputHandler.js',
+    '/js/systems/MenuManager.js',
     '/js/Game.js',
     '/js/main.js',
     '/assets/images/icon-192.svg',

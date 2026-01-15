@@ -28,6 +28,15 @@ class Game {
         this.maxWaves = 0;
         this.prepTimeRemaining = 0;
         
+        // Oyun hızı
+        this.gameSpeed = 1;
+        this.speedOptions = [1, 2, 3];
+        
+        // Özel yetenekler
+        this.abilityCooldowns = {};
+        this.selectedAbility = null;
+        this.meteorTarget = null;
+        
         this.towers = [];
         this.enemies = [];
         this.projectiles = [];
@@ -56,8 +65,10 @@ class Game {
         requestAnimationFrame((t) => this.gameLoop(t));
     }
     
-    startNewGame(mapId, difficulty) {
-        console.log(`Yeni oyun: ${mapId}, Zorluk: ${difficulty.name}`);
+    startNewGame(mapId, difficulty, gameMode = null) {
+        this.currentGameMode = gameMode || CONFIG.GAME_MODES.classic;
+        this.isEndless = this.currentGameMode?.endless || false;
+        console.log(`Yeni oyun: ${mapId}, Zorluk: ${difficulty.name}, Mod: ${this.currentGameMode.name}`);
         
         this.currentMapId = mapId;
         this.currentDifficulty = difficulty;
@@ -66,12 +77,13 @@ class Game {
         if (!mapData) return;
         
         this.currentMap = mapData;
-        this.maxWaves = mapData.maxWaves || 15;
+        this.maxWaves = this.isEndless ? 999 : (mapData.maxWaves || 15);
         this.themeColors = mapManager.getThemeColors(mapId);
         this.availableTowers = mapData.availableTowers || ['archer', 'cannon', 'ice'];
         
-        // Zorluk ayarları
-        this.gold = difficulty.startingGold;
+        // Zorluk ayarları + Harita bazlı gold
+        const baseGold = mapData.startingGold || 150;
+        this.gold = Math.round(baseGold * difficulty.goldMultiplier);
         this.lives = difficulty.startingLives;
         this.prepTimeRemaining = difficulty.prepTime;
         this.currentWave = 0;
@@ -81,6 +93,7 @@ class Game {
         this.enemies = [];
         this.projectiles = [];
         this.waveManager.clear();
+        particleSystem.clear();
         
         // Grid yükle
         this.grid.loadMap(mapData);
@@ -98,12 +111,18 @@ class Game {
             setTimeout(() => this.showMessage(mapData.newTowerMessage, '#4ade80', 3000), 500);
         }
         
+        // Endless mode mesajı
+        if (this.isEndless) {
+            setTimeout(() => this.showMessage('♾️ SONSUZ MOD - Hayatta kal!', '#ffd700', 3000), 1000);
+        }
+        
         this.state = 'preparing';
         this.updateUI();
     }
     
     gameLoop(currentTime) {
-        const dt = Math.min((currentTime - this.lastFrameTime) / 1000, 0.1);
+        const rawDt = Math.min((currentTime - this.lastFrameTime) / 1000, 0.1);
+        const dt = rawDt * this.gameSpeed; // Hız çarpanı
         this.lastFrameTime = currentTime;
         
         this.updateFPS(currentTime);
@@ -129,6 +148,9 @@ class Game {
         }
         
         this.input.updateTowerMenuState();
+        
+        // Particle sistemi her zaman güncelle
+        particleSystem.update(dt);
         
         if (this.state === 'preparing') {
             this.prepTimeRemaining -= dt;
@@ -156,9 +178,36 @@ class Game {
                 this.lives -= enemy.damage;
                 this.enemies.splice(i, 1);
                 this.showMessage(`-${enemy.damage} ❤️`, '#ff0000', 1000);
+                soundManager.play('damage');
             } else if (!enemy.alive) {
+                // Ölüm particle efekti
+                const colors = { neutral: '#90EE90', ice: '#87CEEB', fire: '#FF4500', wind: '#98FB98', earth: '#8B4513' };
+                particleSystem.enemyDeath(enemy.x, enemy.y, colors[enemy.element] || '#ff0000');
+                
+                // Boss split mekanizması
+                const splits = enemy.getSplitEnemies();
+                if (splits.length > 0) {
+                    particleSystem.explosion(enemy.x, enemy.y, '#ffd700', 20);
+                    for (const splitData of splits) {
+                        const splitEnemy = new Enemy(
+                            splitData.type, 
+                            this.currentMap.path, 
+                            this.currentWave, 
+                            this.currentDifficulty
+                        );
+                        splitEnemy.pathIndex = splitData.pathIndex;
+                        splitEnemy.x = splitData.x;
+                        splitEnemy.y = splitData.y;
+                        splitEnemy.updateTarget();
+                        this.enemies.push(splitEnemy);
+                    }
+                    this.showMessage(`👑 Boss bölündü!`, '#ff6b6b', 1500);
+                }
+                
                 this.gold += enemy.reward;
+                particleSystem.gold(enemy.x, enemy.y - 10);
                 this.enemies.splice(i, 1);
+                soundManager.play('enemyDeath');
             }
         }
     }
@@ -183,22 +232,33 @@ class Game {
         this.state = 'playing';
         this.showMessage(`Wave ${this.currentWave}`, '#ffd700');
         this.waveManager.generateWave(this.currentWave);
+        soundManager.play('wave');
     }
     
     endWave() {
-        if (this.currentWave >= this.maxWaves) {
+        // Endless modda sonsuz devam
+        if (!this.isEndless && this.currentWave >= this.maxWaves) {
             this.victory();
             return;
         }
         
         this.state = 'preparing';
         this.prepTimeRemaining = this.currentDifficulty.prepTime;
-        this.showMessage(`Wave ${this.currentWave} tamamlandı!`, '#00ff00');
+        
+        // Endless modda her 5 wave'de bonus altın
+        if (this.isEndless && this.currentWave % 5 === 0) {
+            const bonus = 50 + this.currentWave * 5;
+            this.gold += bonus;
+            this.showMessage(`🏆 Wave ${this.currentWave}! +${bonus}💰`, '#ffd700', 2500);
+        } else {
+            this.showMessage(`Wave ${this.currentWave} tamamlandı!`, '#00ff00');
+        }
     }
     
     victory() {
         this.state = 'victory';
         this.showMessage('🏆 ZAFER! 🏆', '#ffd700', 5000);
+        soundManager.play('victory');
         
         // PlayerManager ile kaydet - haritayı tamamla
         const difficultyId = this.currentDifficulty?.id || 'normal';
@@ -212,7 +272,15 @@ class Game {
     
     gameOver() {
         this.state = 'game_over';
-        this.showMessage('💀 OYUN BİTTİ 💀', '#ff0000', 5000);
+        
+        if (this.isEndless) {
+            this.showMessage(`💀 Wave ${this.currentWave}'de yenildin!`, '#ff0000', 5000);
+            // Endless highscore kaydet
+            playerManager.saveEndlessScore(this.currentMapId, this.currentWave, this.currentDifficulty.id);
+        } else {
+            this.showMessage('💀 OYUN BİTTİ 💀', '#ff0000', 5000);
+        }
+        soundManager.play('defeat');
         
         // Wave ilerlemesini kaydet (yenilsek bile)
         const difficultyId = this.currentDifficulty?.id || 'normal';
@@ -245,6 +313,7 @@ class Game {
         this.gold -= cfg.cost;
         this.towers.push(tower);
         this.showMessage(`${cfg.name} yerleştirildi!`, '#00ff00');
+        soundManager.play('towerPlace');
         return true;
     }
     
@@ -263,6 +332,34 @@ class Game {
                 waveEl.textContent = `📢 Wave: ${this.currentWave}/${this.maxWaves}`;
             }
         }
+        
+        // Yetenekleri güncelle
+        this.updateAbilitiesUI();
+    }
+    
+    updateAbilitiesUI() {
+        const now = performance.now();
+        
+        document.querySelectorAll('.ability-btn').forEach(btn => {
+            const abilityId = btn.dataset.ability;
+            const cfg = CONFIG.ABILITIES[abilityId];
+            if (!cfg) return;
+            
+            const cooldownEnd = this.abilityCooldowns[abilityId] || 0;
+            const remaining = Math.max(0, cooldownEnd - now);
+            const onCooldown = remaining > 0;
+            const canAfford = this.gold >= cfg.cost;
+            
+            btn.classList.toggle('on-cooldown', onCooldown);
+            btn.classList.toggle('disabled', !canAfford && !onCooldown);
+            
+            // Cooldown overlay
+            const cooldownEl = btn.querySelector('.ability-cooldown');
+            if (cooldownEl) {
+                const percent = onCooldown ? (remaining / cfg.cooldown) * 100 : 0;
+                cooldownEl.style.height = `${percent}%`;
+            }
+        });
     }
     
     updateTowerMenu() {
@@ -287,8 +384,125 @@ class Game {
     }
     
     hideGameUI() {
+        document.getElementById('top-bar')?.classList.add('hidden');
         document.getElementById('tower-panel')?.classList.add('hidden');
         document.getElementById('confirm-menu')?.classList.add('hidden');
+    }
+    
+    cycleSpeed() {
+        const currentIndex = this.speedOptions.indexOf(this.gameSpeed);
+        const nextIndex = (currentIndex + 1) % this.speedOptions.length;
+        this.gameSpeed = this.speedOptions[nextIndex];
+        this.updateSpeedButton();
+    }
+    
+    updateSpeedButton() {
+        const btn = document.getElementById('speed-btn');
+        if (btn) {
+            btn.textContent = `${this.gameSpeed}x`;
+            btn.className = `speed-btn speed-${this.gameSpeed}x`;
+        }
+    }
+    
+    // ==================== ÖZEL YETENEKLER ====================
+    
+    useAbility(abilityId, targetCol = null, targetRow = null) {
+        const cfg = CONFIG.ABILITIES[abilityId];
+        if (!cfg) return false;
+        
+        const now = performance.now();
+        
+        // Cooldown kontrolü
+        if (this.abilityCooldowns[abilityId] && now < this.abilityCooldowns[abilityId]) {
+            this.showMessage('Yetenek hazır değil!', '#ff6b6b');
+            return false;
+        }
+        
+        // Altın kontrolü
+        if (this.gold < cfg.cost) {
+            this.showMessage('Yetersiz altın!', '#ff6b6b');
+            return false;
+        }
+        
+        // Yeteneği uygula
+        let success = false;
+        
+        switch (abilityId) {
+            case 'meteor':
+                if (targetCol !== null && targetRow !== null) {
+                    success = this.useMeteor(targetCol, targetRow, cfg);
+                }
+                break;
+            case 'freeze':
+                success = this.useFreeze(cfg);
+                break;
+            case 'goldRush':
+                success = this.useGoldRush(cfg);
+                break;
+            case 'repair':
+                success = this.useRepair(cfg);
+                break;
+        }
+        
+        if (success) {
+            this.gold -= cfg.cost;
+            this.abilityCooldowns[abilityId] = now + cfg.cooldown;
+            this.updateUI();
+        }
+        
+        return success;
+    }
+    
+    useMeteor(col, row, cfg) {
+        const centerX = col * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
+        const centerY = row * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
+        const radiusPixels = cfg.radius * CONFIG.GRID.CELL_SIZE;
+        
+        let hitCount = 0;
+        for (const enemy of this.enemies) {
+            if (!enemy.alive) continue;
+            const dist = Utils.distance(centerX, centerY, enemy.x, enemy.y);
+            if (dist <= radiusPixels) {
+                enemy.takeDamage(cfg.damage);
+                hitCount++;
+            }
+        }
+        
+        this.showMessage(`☄️ Meteor! ${hitCount} düşmana hasar!`, '#ff4500');
+        soundManager.play('explosion');
+        return true;
+    }
+    
+    useFreeze(cfg) {
+        let count = 0;
+        for (const enemy of this.enemies) {
+            if (!enemy.alive) continue;
+            enemy.applyEffect('slow', cfg.slowAmount, cfg.duration);
+            count++;
+        }
+        
+        this.showMessage(`🌊 ${count} düşman yavaşladı!`, '#00bfff');
+        soundManager.play('ability');
+        return true;
+    }
+    
+    useGoldRush(cfg) {
+        this.gold += cfg.goldBonus;
+        this.showMessage(`💎 +${cfg.goldBonus} Altın!`, '#ffd700');
+        soundManager.play('gold');
+        return true;
+    }
+    
+    useRepair(cfg) {
+        if (this.lives >= this.currentDifficulty.startingLives) {
+            this.showMessage('Can zaten dolu!', '#ffaa00');
+            return false;
+        }
+        
+        this.lives = Math.min(this.lives + cfg.healAmount, this.currentDifficulty.startingLives);
+        this.showMessage(`🔧 +${cfg.healAmount} Can!`, '#4ade80');
+        soundManager.play('ability');
+        return true;
     }
     
     showMessage(message, color = '#fff', duration = 2000) {
@@ -310,9 +524,17 @@ class Game {
         this.renderer.drawBackground();
         this.renderer.drawGrid(this.grid);
         
+        // Seçili kulenin menzilini göster
+        if (this.input.selectedTower) {
+            this.input.selectedTower.renderRange(this.ctx, true);
+        }
+        
         for (const tower of this.towers) tower.render(this.ctx);
         for (const enemy of this.enemies) enemy.render(this.ctx);
         for (const proj of this.projectiles) proj.render(this.ctx);
+        
+        // Parçacık efektleri
+        particleSystem.render(this.ctx);
         
         const preview = this.input.getPreviewInfo();
         if (preview) {

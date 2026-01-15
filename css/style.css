@@ -95,6 +95,7 @@ body {
 #top-bar {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 10px 16px;
     background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
     color: #fff;
@@ -103,6 +104,108 @@ body {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     pointer-events: auto;
 }
+
+#top-bar.hidden {
+    display: none !important;
+}
+
+#center-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.speed-btn {
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    border: 2px solid;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 36px;
+}
+
+.speed-1x { background: #2a2a4a; border-color: #4a4a6a; color: #fff; }
+.speed-2x { background: #2a4a2a; border-color: #4ade80; color: #4ade80; }
+.speed-3x { background: #4a2a2a; border-color: #ff6b6b; color: #ff6b6b; }
+.speed-btn:hover { transform: scale(1.1); }
+
+#right-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sound-btn {
+    padding: 4px 8px;
+    font-size: 16px;
+    background: #2a2a4a;
+    border: 2px solid #4a4a6a;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.sound-btn:hover { border-color: #ffd700; }
+.sound-btn.muted { opacity: 0.5; }
+
+#sound-menu {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #ffd700;
+    border-radius: 10px;
+    padding: 12px;
+    min-width: 180px;
+    z-index: 200;
+    pointer-events: auto;
+}
+
+#sound-menu.hidden { display: none; }
+
+.sound-menu-title {
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.sound-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #fff;
+    font-size: 13px;
+}
+
+#volume-slider {
+    flex: 1;
+    height: 6px;
+    cursor: pointer;
+}
+
+#volume-value {
+    min-width: 35px;
+    text-align: right;
+}
+
+.mute-btn {
+    width: 100%;
+    padding: 8px;
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.mute-btn:hover { background: #c0392b; }
+.mute-btn.unmute { background: #2ecc71; }
+.mute-btn.unmute:hover { background: #27ae60; }
 
 #gold-display { color: #ffd700; }
 #wave-display { color: #87ceeb; }
@@ -113,12 +216,16 @@ body {
    ============================================ */
 #tower-panel {
     position: absolute;
-    top: 50px;
+    top: 55px;
     right: 0;
     display: flex;
     align-items: flex-start;
     pointer-events: auto;
     z-index: 100;
+}
+
+#tower-panel.hidden {
+    display: none !important;
 }
 
 #tower-toggle {
@@ -297,6 +404,170 @@ body {
 #confirm-btn:hover, #confirm-btn:active { background: #27ae60; }
 #cancel-btn { background: #e74c3c; color: #fff; }
 #cancel-btn:hover, #cancel-btn:active { background: #c0392b; }
+
+/* ============================================
+   KULE BİLGİ/UPGRADE MENÜSÜ
+   ============================================ */
+#tower-info-menu {
+    position: absolute;
+    bottom: 80px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #ffd700;
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 200px;
+    pointer-events: auto;
+    z-index: 160;
+}
+
+#tower-info-menu.hidden { display: none; }
+
+#tower-info-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #444;
+}
+
+#tower-info-icon { font-size: 32px; }
+#tower-info-name { font-weight: bold; color: #fff; font-size: 14px; display: block; }
+#tower-info-level { color: #ffd700; font-size: 12px; }
+
+#tower-info-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.stat-row span:last-child { color: #fff; font-weight: bold; }
+
+#tower-info-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.upgrade-btn, .sell-btn {
+    flex: 1;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.upgrade-btn {
+    background: #3498db;
+    color: #fff;
+}
+
+.upgrade-btn:hover { background: #2980b9; }
+.upgrade-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
+
+.sell-btn {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.sell-btn:hover { background: #c0392b; }
+
+#close-info-btn {
+    width: 100%;
+    padding: 8px;
+    background: #444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#close-info-btn:hover { background: #555; }
+
+/* ============================================
+   ÖZEL YETENEKLER ÇUBUĞU
+   ============================================ */
+#abilities-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 2px solid #555;
+    pointer-events: auto;
+    z-index: 100;
+}
+
+.ability-btn {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    background: #2a2a4a;
+    border: 2px solid #444;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    overflow: hidden;
+}
+
+.ability-btn:hover:not(.disabled):not(.on-cooldown) {
+    border-color: #ffd700;
+    transform: scale(1.1);
+}
+
+.ability-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ability-btn.on-cooldown {
+    cursor: not-allowed;
+}
+
+.ability-btn.selected {
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.ability-icon {
+    font-size: 24px;
+    z-index: 1;
+}
+
+.ability-cooldown {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: rgba(0, 0, 0, 0.7);
+    transition: height 0.1s linear;
+}
+
+.ability-btn.on-cooldown .ability-cooldown {
+    background: rgba(100, 100, 100, 0.8);
+}
 
 /* ============================================
    PWA INSTALL BANNER

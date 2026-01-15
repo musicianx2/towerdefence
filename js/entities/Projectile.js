@@ -74,7 +74,14 @@ class Projectile {
         if (!this.targetEnemy) return;
         
         // Ana hasar (element çarpanı ile)
-        this.targetEnemy.takeDamage(this.damage, this.element);
+        const result = this.targetEnemy.takeDamage(this.damage, this.element);
+        
+        // Element bazlı particle efekti
+        if (result && !result.blocked) {
+            this.spawnHitParticles();
+        } else if (result && result.blocked) {
+            particleSystem.shield(this.targetEnemy.x, this.targetEnemy.y);
+        }
         
         // Yavaşlatma
         if (this.slowAmount) {
@@ -99,6 +106,7 @@ class Projectile {
         // Alan hasarı
         if (this.splashRadius > 0) {
             this.applySplashDamage(enemies);
+            particleSystem.explosion(this.x, this.y, this.color, 12);
         }
         
         // Zincir vuruş
@@ -185,6 +193,36 @@ class Projectile {
             ctx.lineTo(this.targetEnemy.x, this.targetEnemy.y);
             ctx.stroke();
             ctx.setLineDash([]);
+        }
+    }
+    
+    /**
+     * Element bazlı hit particle efekti
+     */
+    spawnHitParticles() {
+        if (!this.targetEnemy) return;
+        const x = this.targetEnemy.x;
+        const y = this.targetEnemy.y;
+        
+        switch (this.element) {
+            case 'ice':
+                particleSystem.ice(x, y);
+                break;
+            case 'fire':
+                particleSystem.fire(x, y);
+                break;
+            case 'electric':
+                particleSystem.electric(x, y);
+                break;
+            case 'wind':
+                particleSystem.wind(x, y);
+                break;
+            case 'earth':
+                particleSystem.earth(x, y);
+                break;
+            default:
+                // Basit hit efekti
+                particleSystem.explosion(x, y, this.color, 5);
         }
     }
 }

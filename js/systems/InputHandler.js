@@ -13,6 +13,7 @@ class InputHandler {
         this.gridPos = { col: -1, row: -1 };
         this.selectedTowerType = null;
         this.pendingPlacement = null;
+        this.selectedTower = null; // Seçili mevcut kule
         
         this.init();
     }
@@ -39,6 +40,11 @@ class InputHandler {
         // Confirm buttons
         document.getElementById('confirm-btn')?.addEventListener('click', () => this.confirmPlacement());
         document.getElementById('cancel-btn')?.addEventListener('click', () => this.cancelPlacement());
+        
+        // Upgrade/Sell buttons
+        document.getElementById('upgrade-btn')?.addEventListener('click', () => this.upgradeTower());
+        document.getElementById('sell-btn')?.addEventListener('click', () => this.sellTower());
+        document.getElementById('close-info-btn')?.addEventListener('click', () => this.closeTowerInfo());
         
         // Start button
         document.getElementById('start-wave-btn')?.addEventListener('click', () => {
@@ -171,7 +177,27 @@ class InputHandler {
         const gp = Utils.pixelToGrid(x, y);
         if (!Utils.isInBounds(gp.col, gp.row)) return;
         
+        // Meteor hedef seçimi
+        if (this.game.selectedAbility === 'meteor') {
+            this.game.useAbility('meteor', gp.col, gp.row);
+            this.game.selectedAbility = null;
+            document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
+            return;
+        }
+        
+        // Kule info menüsü açıkken başka yere tıklanınca kapat
+        if (this.selectedTower && !this.selectedTowerType) {
+            // Aynı kuleye mi tıkladık kontrol et
+            const clickedTower = this.game.towers.find(t => t.col === gp.col && t.row === gp.row);
+            if (clickedTower && clickedTower === this.selectedTower) {
+                return; // Aynı kule, bir şey yapma
+            }
+            // Başka yere tıklandı, menüyü kapat
+            this.closeTowerInfo();
+        }
+        
         if (this.selectedTowerType) {
+            // Yeni kule yerleştirme modu
             const canPlace = this.game.grid.canPlaceTower(gp.col, gp.row);
             
             if (canPlace) {
@@ -188,7 +214,20 @@ class InputHandler {
                     this.showConfirmMenu();
                 }
             } else {
-                this.game.showMessage('Buraya kule konulamaz!', '#ff6b6b');
+                // Mevcut kuleye mi tıkladık?
+                const tower = this.game.towers.find(t => t.col === gp.col && t.row === gp.row);
+                if (tower) {
+                    this.deselectTower();
+                    this.showTowerInfo(tower);
+                } else {
+                    this.game.showMessage('Buraya kule konulamaz!', '#ff6b6b');
+                }
+            }
+        } else {
+            // Mevcut kuleye tıklama - info göster
+            const tower = this.game.towers.find(t => t.col === gp.col && t.row === gp.row);
+            if (tower) {
+                this.showTowerInfo(tower);
             }
         }
     }
@@ -246,6 +285,91 @@ class InputHandler {
     
     hideConfirmMenu() {
         document.getElementById('confirm-menu')?.classList.add('hidden');
+    }
+    
+    // ==================== TOWER INFO/UPGRADE ====================
+    
+    showTowerInfo(tower) {
+        this.selectedTower = tower;
+        const info = tower.getInfo(this.game.currentDifficulty);
+        
+        // UI güncelle
+        document.getElementById('tower-info-icon').textContent = info.icon;
+        document.getElementById('tower-info-name').textContent = info.name;
+        document.getElementById('tower-info-level').textContent = `Lv.${info.level}`;
+        document.getElementById('stat-damage').textContent = info.damage;
+        document.getElementById('stat-range').textContent = info.range;
+        document.getElementById('stat-firerate').textContent = info.fireRate;
+        
+        const upgradeBtn = document.getElementById('upgrade-btn');
+        const upgradeCost = document.getElementById('upgrade-cost');
+        
+        if (info.level >= info.maxLevel) {
+            upgradeBtn.disabled = true;
+            upgradeCost.textContent = 'MAX';
+        } else {
+            const canAfford = this.game.gold >= info.upgradeCost;
+            upgradeBtn.disabled = !canAfford;
+            upgradeCost.textContent = `💰 ${info.upgradeCost}`;
+        }
+        
+        document.getElementById('sell-price').textContent = info.sellPrice;
+        
+        // Menüyü göster
+        document.getElementById('tower-info-menu')?.classList.remove('hidden');
+    }
+    
+    closeTowerInfo() {
+        this.selectedTower = null;
+        document.getElementById('tower-info-menu')?.classList.add('hidden');
+    }
+    
+    upgradeTower() {
+        if (!this.selectedTower) return;
+        
+        const cost = this.selectedTower.getUpgradeCost();
+        if (!cost || this.game.gold < cost) {
+            this.game.showMessage('Yetersiz altın!', '#ff6b6b');
+            return;
+        }
+        
+        if (this.selectedTower.level >= this.selectedTower.maxLevel) {
+            this.game.showMessage('Maksimum seviye!', '#ffaa00');
+            return;
+        }
+        
+        this.game.gold -= cost;
+        this.selectedTower.upgrade();
+        this.game.updateUI();
+        this.game.showMessage(`${this.selectedTower.config.icon} Lv.${this.selectedTower.level}!`, '#4ade80');
+        soundManager.play('upgrade');
+        
+        // Info güncelle
+        this.showTowerInfo(this.selectedTower);
+    }
+    
+    sellTower() {
+        if (!this.selectedTower) return;
+        
+        const sellPrice = this.selectedTower.getSellPrice(this.game.currentDifficulty);
+        const tower = this.selectedTower;
+        
+        // Grid'i boşalt
+        this.game.grid.setCell(tower.col, tower.row, CONFIG.CELL_TYPES.EMPTY);
+        
+        // Kuleyi listeden çıkar
+        const index = this.game.towers.indexOf(tower);
+        if (index > -1) {
+            this.game.towers.splice(index, 1);
+        }
+        
+        // Altın ver
+        this.game.gold += sellPrice;
+        this.game.updateUI();
+        this.game.showMessage(`+${sellPrice} 💰`, '#ffd700');
+        soundManager.play('gold');
+        
+        this.closeTowerInfo();
     }
     
     showTowerMenu() {

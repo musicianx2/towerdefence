@@ -10,6 +10,7 @@ class MenuManager {
         this.currentScreen = 'main';
         this.selectedMap = null;
         this.selectedDifficulty = 'normal';
+        this.selectedGameMode = 'classic';
         this.animationFrame = 0;
         this.buttons = [];
         this.mousePos = { x: 0, y: 0 };
@@ -517,23 +518,52 @@ class MenuManager {
         ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 32px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(`${map?.icon || ''} ${map?.name || ''}`, w/2, 55);
+        ctx.fillText(`${map?.icon || ''} ${map?.name || ''}`, w/2, 45);
         
         ctx.font = '14px Arial';
         ctx.fillStyle = '#888';
-        ctx.fillText(map?.description || '', w/2, 85);
-        ctx.fillText(`${map?.maxWaves || 15} Wave`, w/2, 105);
+        ctx.fillText(map?.description || '', w/2, 70);
         
-        ctx.font = 'bold 22px Arial';
+        // Game Mode seçimi
+        ctx.font = 'bold 18px Arial';
         ctx.fillStyle = '#fff';
-        ctx.fillText('Zorluk Seç', w/2, 150);
+        ctx.fillText('Oyun Modu', w/2, 105);
+        
+        const modes = Object.values(CONFIG.GAME_MODES);
+        const modeW = 140, modeH = 45, modeGap = 20;
+        const modeStartX = (w - (modes.length * modeW + (modes.length-1) * modeGap)) / 2;
+        
+        modes.forEach((mode, i) => {
+            const x = modeStartX + i * (modeW + modeGap);
+            const y = 120;
+            const selected = this.selectedGameMode === mode.id;
+            const hover = this.isHover(x, y, modeW, modeH);
+            
+            ctx.fillStyle = selected ? '#2ecc71' : (hover ? '#3a3a5a' : '#2a2a4a');
+            ctx.strokeStyle = selected ? '#4ade80' : (hover ? '#ffd700' : '#444');
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(x, y, modeW, modeH, 10);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = selected ? '#fff' : '#aaa';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`${mode.icon} ${mode.name}`, x + modeW/2, y + 30);
+            
+            this.buttons.push({ id: 'select_mode_' + mode.id, x, y, w: modeW, h: modeH, modeId: mode.id });
+        });
+        
+        ctx.font = 'bold 18px Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Zorluk Seç', w/2, 195);
         
         const diffs = Object.values(CONFIG.DIFFICULTY);
-        const cardW = 170, cardH = 190, gap = 25;
+        const cardW = 170, cardH = 170, gap = 25;
         const startX = (w - (diffs.length * cardW + (diffs.length-1) * gap)) / 2;
         
         diffs.forEach((diff, i) => {
-            this.drawDifficultyCard(ctx, startX + i * (cardW + gap), 175, cardW, cardH, diff);
+            this.drawDifficultyCard(ctx, startX + i * (cardW + gap), 215, cardW, cardH, diff);
         });
         
         // Yeni kule bilgisi
@@ -629,18 +659,23 @@ class MenuManager {
         
         ctx.font = '22px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(diff.icon, x + w/2, y + 35);
+        ctx.fillText(diff.icon, x + w/2, y + 30);
         
         ctx.font = 'bold 16px Arial';
         ctx.fillStyle = selected ? '#ffd700' : '#fff';
-        ctx.fillText(diff.name, x + w/2, y + 65);
+        ctx.fillText(diff.name, x + w/2, y + 55);
+        
+        // Harita bazlı altın hesapla
+        const map = MAPS[this.selectedMap];
+        const baseGold = map?.startingGold || 150;
+        const gold = Math.round(baseGold * diff.goldMultiplier);
         
         ctx.font = '11px Arial';
         ctx.fillStyle = '#999';
-        ctx.fillText(`❤️ ${diff.startingLives} Can`, x + w/2, y + 95);
-        ctx.fillText(`💰 ${diff.startingGold} Altın`, x + w/2, y + 115);
-        ctx.fillText(`⏱️ ${diff.prepTime}s Hazırlık`, x + w/2, y + 135);
-        ctx.fillText(`👹 x${diff.enemyHealthMult} HP`, x + w/2, y + 155);
+        ctx.fillText(`❤️ ${diff.startingLives} Can`, x + w/2, y + 80);
+        ctx.fillText(`💰 ${gold} Altın`, x + w/2, y + 98);
+        ctx.fillText(`⏱️ ${diff.prepTime}s Hazırlık`, x + w/2, y + 116);
+        ctx.fillText(`👹 x${diff.enemyHealthMult} HP`, x + w/2, y + 134);
         
         if (selected) {
             ctx.fillStyle = '#ffd700';
@@ -779,6 +814,8 @@ class MenuManager {
                     this.currentScreen = 'difficulty';
                 } else if (btn.id.startsWith('select_diff_')) {
                     this.selectedDifficulty = btn.diffId;
+                } else if (btn.id.startsWith('select_mode_')) {
+                    this.selectedGameMode = btn.modeId;
                 }
                 return true;
             }
@@ -789,7 +826,8 @@ class MenuManager {
     startGame() {
         if (!this.selectedMap) return;
         const difficulty = CONFIG.DIFFICULTY[this.selectedDifficulty];
-        this.game.startNewGame(this.selectedMap, difficulty);
+        const gameMode = CONFIG.GAME_MODES[this.selectedGameMode];
+        this.game.startNewGame(this.selectedMap, difficulty, gameMode);
     }
     
     show(screen = 'main') {

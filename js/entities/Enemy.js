@@ -61,6 +61,19 @@ class Enemy {
         this.knockbackX = 0;
         this.knockbackY = 0;
         
+        // Boss özellikleri
+        this.isBoss = cfg.isBoss || false;
+        this.bossAbility = cfg.bossAbility || null;
+        this.abilityTimer = 0;
+        this.shieldActive = false;
+        this.shieldTimer = 0;
+        this.splitOnDeath = cfg.bossAbility === 'split';
+        this.splitCount = cfg.splitCount || 0;
+        this.splitType = cfg.splitType || null;
+        this.teleportCooldown = cfg.teleportCooldown || 10000;
+        this.shieldCooldown = cfg.shieldCooldown || 8000;
+        this.shieldDuration = cfg.shieldDuration || 3000;
+        
         // Hedef
         this.targetX = this.x;
         this.targetY = this.y;
@@ -86,6 +99,22 @@ class Enemy {
      */
     update(deltaTime) {
         if (!this.alive || this.reachedEnd) return;
+        
+        // Shield timer
+        if (this.shieldActive) {
+            this.shieldTimer -= deltaTime * 1000;
+            if (this.shieldTimer <= 0) {
+                this.shieldActive = false;
+            }
+        }
+        
+        // Boss yetenek timer
+        if (this.isBoss && this.bossAbility) {
+            this.abilityTimer -= deltaTime * 1000;
+            if (this.abilityTimer <= 0) {
+                this.useBossAbility();
+            }
+        }
         
         // Stun efekti - hareket etme
         if (this.stunTimer > 0) {
@@ -135,6 +164,11 @@ class Enemy {
      * Hasar alır (element çarpanı ile)
      */
     takeDamage(amount, attackerElement = 'neutral') {
+        // Shield aktifse hasar alma
+        if (this.shieldActive) {
+            return { damage: 0, multiplier: 0, blocked: true };
+        }
+        
         // Element çarpanı uygula
         const multiplier = CONFIG.DAMAGE_MATRIX[attackerElement]?.[this.element] || 1.0;
         const finalDamage = amount * multiplier;
@@ -156,6 +190,23 @@ class Enemy {
         const effectiveAmount = amount + (1 - amount) * this.slowResist;
         this.slowAmount = Math.min(this.slowAmount, effectiveAmount);
         this.slowTimer = Math.max(this.slowTimer, duration * (1 - this.slowResist));
+    }
+    
+    /**
+     * Genel efekt uygulama (yetenekler için)
+     */
+    applyEffect(type, amount, duration) {
+        switch (type) {
+            case 'slow':
+                this.applySlow(amount, duration);
+                break;
+            case 'burn':
+                this.applyBurn(amount, duration);
+                break;
+            case 'stun':
+                this.applyStun(duration);
+                break;
+        }
     }
     
     /**
@@ -190,6 +241,59 @@ class Enemy {
         }
     }
     
+    // ==================== BOSS YETENEKLERİ ====================
+    
+    useBossAbility() {
+        switch (this.bossAbility) {
+            case 'shield':
+                this.activateShield();
+                this.abilityTimer = this.shieldCooldown;
+                break;
+            case 'teleport':
+                this.teleportForward();
+                this.abilityTimer = this.teleportCooldown;
+                break;
+            // split ölünce tetiklenir, timer ile değil
+        }
+    }
+    
+    activateShield() {
+        this.shieldActive = true;
+        this.shieldTimer = this.shieldDuration;
+    }
+    
+    teleportForward() {
+        // Path'te 3-5 adım ileri ışınlan
+        const jumpSteps = Math.min(4, this.path.length - this.pathIndex - 1);
+        if (jumpSteps > 0) {
+            this.pathIndex += jumpSteps;
+            const newPos = this.path[this.pathIndex];
+            this.x = newPos.col * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
+            this.y = newPos.row * CONFIG.GRID.CELL_SIZE + CONFIG.GRID.CELL_SIZE / 2;
+            this.updateTarget();
+        }
+    }
+    
+    /**
+     * Bölünme - öldüğünde çağrılır, yeni düşmanlar döndürür
+     */
+    getSplitEnemies() {
+        if (!this.splitOnDeath || !this.splitType || this.splitCount <= 0) {
+            return [];
+        }
+        
+        const splits = [];
+        for (let i = 0; i < this.splitCount; i++) {
+            splits.push({
+                type: this.splitType,
+                pathIndex: Math.max(0, this.pathIndex - 1),
+                x: this.x + (Math.random() - 0.5) * 20,
+                y: this.y + (Math.random() - 0.5) * 20
+            });
+        }
+        return splits;
+    }
+    
     /**
      * Düşmanı çizer
      */
@@ -202,11 +306,30 @@ class Enemy {
         ctx.ellipse(this.x, this.y + this.size / 2, this.size * 0.8, this.size * 0.4, 0, 0, Math.PI * 2);
         ctx.fill();
         
+        // Shield efekti (gövdeden önce)
+        if (this.shieldActive) {
+            ctx.fillStyle = 'rgba(100, 200, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size + 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#00bfff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
         // Gövde
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Boss taç işareti
+        if (this.isBoss) {
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('👑', this.x, this.y - this.size - 12);
+        }
         
         // Yavaşlatma efekti
         if (this.slowTimer > 0) {
@@ -223,7 +346,7 @@ class Enemy {
         }
         
         // Normal kenar
-        if (this.slowTimer <= 0 && this.burnTimer <= 0) {
+        if (this.slowTimer <= 0 && this.burnTimer <= 0 && !this.shieldActive) {
             ctx.strokeStyle = Utils.darkenColor(this.color, 30);
             ctx.lineWidth = 2;
             ctx.stroke();

@@ -198,6 +198,140 @@ function hideInstallBanner() {
     if (banner) banner.classList.add('hidden');
 }
 
+// Speed button handler
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'speed-btn' && game) {
+        game.cycleSpeed();
+    }
+});
+
+// Ability buttons handler
+document.addEventListener('click', (e) => {
+    const abilityBtn = e.target.closest('.ability-btn');
+    if (!abilityBtn || !game) return;
+    
+    const abilityId = abilityBtn.dataset.ability;
+    if (!abilityId) return;
+    
+    // Meteor için hedef seçimi gerekiyor
+    if (abilityId === 'meteor') {
+        if (game.selectedAbility === 'meteor') {
+            // İptal et
+            game.selectedAbility = null;
+            abilityBtn.classList.remove('selected');
+            game.showMessage('Meteor iptal edildi', '#888');
+        } else {
+            // Seç
+            document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
+            game.selectedAbility = 'meteor';
+            abilityBtn.classList.add('selected');
+            game.showMessage('Haritada hedef seç!', '#ff4500');
+        }
+    } else {
+        // Diğer yetenekler direkt kullanılır
+        game.useAbility(abilityId);
+    }
+});
+
+// Keyboard shortcut for speed (H key)
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'h' && game && game.state !== 'menu') {
+        game.cycleSpeed();
+    }
+    // M tuşu ile mute toggle
+    if (e.key.toLowerCase() === 'm' && game && game.state !== 'menu') {
+        toggleMute();
+    }
+});
+
+// ==================== SES KONTROL ====================
+
+// Ses menüsü toggle
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'sound-btn' || e.target.closest('#sound-btn')) {
+        document.getElementById('sound-menu')?.classList.toggle('hidden');
+    } else if (!e.target.closest('#sound-menu')) {
+        document.getElementById('sound-menu')?.classList.add('hidden');
+    }
+});
+
+// Volume slider
+document.getElementById('volume-slider')?.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    soundManager.setVolume(value / 100);
+    document.getElementById('volume-value').textContent = `${value}%`;
+    updateSoundButton();
+    
+    // localStorage'a kaydet
+    localStorage.setItem('td_volume', value);
+});
+
+// Mute button
+document.getElementById('mute-btn')?.addEventListener('click', toggleMute);
+
+function toggleMute() {
+    const isEnabled = soundManager.toggle();
+    updateSoundButton();
+    updateMuteButton(isEnabled);
+    
+    // localStorage'a kaydet
+    localStorage.setItem('td_sound_enabled', isEnabled);
+}
+
+function updateSoundButton() {
+    const btn = document.getElementById('sound-btn');
+    if (!btn) return;
+    
+    if (!soundManager.enabled) {
+        btn.textContent = '🔇';
+        btn.classList.add('muted');
+    } else if (soundManager.volume < 0.3) {
+        btn.textContent = '🔉';
+        btn.classList.remove('muted');
+    } else {
+        btn.textContent = '🔊';
+        btn.classList.remove('muted');
+    }
+}
+
+function updateMuteButton(isEnabled) {
+    const btn = document.getElementById('mute-btn');
+    if (!btn) return;
+    
+    if (isEnabled) {
+        btn.textContent = '🔇 Sessize Al';
+        btn.classList.remove('unmute');
+    } else {
+        btn.textContent = '🔊 Sesi Aç';
+        btn.classList.add('unmute');
+    }
+}
+
+// Sayfa yüklenince kayıtlı ses ayarlarını yükle
+function loadSoundSettings() {
+    const savedVolume = localStorage.getItem('td_volume');
+    const savedEnabled = localStorage.getItem('td_sound_enabled');
+    
+    if (savedVolume !== null) {
+        const vol = parseInt(savedVolume);
+        soundManager.setVolume(vol / 100);
+        const slider = document.getElementById('volume-slider');
+        if (slider) slider.value = vol;
+        const valueEl = document.getElementById('volume-value');
+        if (valueEl) valueEl.textContent = `${vol}%`;
+    }
+    
+    if (savedEnabled !== null) {
+        soundManager.enabled = savedEnabled === 'true';
+        updateMuteButton(soundManager.enabled);
+    }
+    
+    updateSoundButton();
+}
+
+// DOM yüklenince ayarları yükle
+document.addEventListener('DOMContentLoaded', loadSoundSettings);
+
 /**
  * Service Worker güncelleme
  */
