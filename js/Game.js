@@ -88,6 +88,10 @@ class Game {
         this.prepTimeRemaining = difficulty.prepTime;
         this.currentWave = 0;
         
+        // Hızı sıfırla
+        this.gameSpeed = 1;
+        this.updateSpeedButton();
+        
         // Temizle
         this.towers = [];
         this.enemies = [];
@@ -290,6 +294,11 @@ class Game {
     returnToMenu() {
         this.state = 'menu';
         this.hideGameUI();
+        
+        // Hızı sıfırla
+        this.gameSpeed = 1;
+        this.updateSpeedButton();
+        
         this.menuManager.returnToMainMenu();
     }
     
@@ -534,8 +543,13 @@ class Game {
         this.renderer.drawBackground();
         this.renderer.drawGrid(this.grid);
         
-        // Seçili kulenin menzilini göster
-        if (this.input.selectedTower) {
+        // Seçili kulelerin menzilini göster
+        if (this.input.isMultiSelect && this.input.selectedTowers.length > 0) {
+            // Toplu seçimde tüm kulelerin menzilini göster
+            for (const tower of this.input.selectedTowers) {
+                tower.renderRange(this.ctx, true);
+            }
+        } else if (this.input.selectedTower) {
             this.input.selectedTower.renderRange(this.ctx, true);
         }
         

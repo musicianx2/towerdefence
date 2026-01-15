@@ -14,6 +14,13 @@ class InputHandler {
         this.selectedTowerType = null;
         this.pendingPlacement = null;
         this.selectedTower = null; // Seçili mevcut kule
+        this.selectedTowers = []; // Toplu seçim için
+        this.isMultiSelect = false; // Toplu seçim modu
+        
+        // Çift tık algılama
+        this.lastClickTime = 0;
+        this.lastClickTower = null;
+        this.doubleClickDelay = 300; // ms
         
         this.init();
     }
@@ -29,8 +36,21 @@ class InputHandler {
         this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
         this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
         
-        // Context menu
-        this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        // Context menu - sağ tık ile iptal
+        this.canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            // Sağ tık ile seçimi iptal et
+            if (this.selectedTowerType) {
+                this.deselectTower();
+            }
+            if (this.selectedTower) {
+                this.closeTowerInfo();
+            }
+            if (this.game.selectedAbility) {
+                this.game.selectedAbility = null;
+                document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
+            }
+        });
         
         // Tower menu
         document.querySelectorAll('.tower-option').forEach(opt => {
@@ -50,6 +70,15 @@ class InputHandler {
         document.getElementById('start-wave-btn')?.addEventListener('click', () => {
             if (this.game.state === 'preparing') {
                 this.game.startWave();
+            }
+        });
+        
+        // Back button
+        document.getElementById('back-btn')?.addEventListener('click', () => {
+            if (this.game.state === 'preparing' || this.game.state === 'playing') {
+                if (confirm('Ana menüye dönmek istiyor musun?')) {
+                    this.game.returnToMenu();
+                }
             }
         });
         
@@ -199,8 +228,15 @@ class InputHandler {
         if (this.selectedTowerType) {
             // Yeni kule yerleştirme modu
             const canPlace = this.game.grid.canPlaceTower(gp.col, gp.row);
+            const cfg = CONFIG.TOWERS[this.selectedTowerType];
             
             if (canPlace) {
+                // Para kontrolü - yoksa direkt uyarı ver, onay menüsü gösterme
+                if (this.game.gold < cfg.cost) {
+                    this.game.showWarning('Yetersiz altın!');
+                    return;
+                }
+                
                 if (this.pendingPlacement &&
                     this.pendingPlacement.col === gp.col &&
                     this.pendingPlacement.row === gp.row) {
@@ -220,24 +256,86 @@ class InputHandler {
                     this.deselectTower();
                     this.showTowerInfo(tower);
                 } else {
-                    this.game.showMessage('Buraya kule konulamaz!', '#ff6b6b');
+                    this.game.showWarning('Buraya kule konulamaz!');
                 }
             }
         } else {
-            // Mevcut kuleye tıklama - info göster
+            // Mevcut kuleye tıklama
             const tower = this.game.towers.find(t => t.col === gp.col && t.row === gp.row);
             if (tower) {
-                this.showTowerInfo(tower);
+                const now = Date.now();
+                
+                // Çift tık kontrolü - aynı tip kuleleri toplu seç
+                if (this.lastClickTower && 
+                    this.lastClickTower.type === tower.type &&
+                    now - this.lastClickTime < this.doubleClickDelay) {
+                    this.selectAllTowersOfType(tower.type);
+                    this.lastClickTower = null;
+                } else {
+                    // Tek tık - normal seçim
+                    this.showTowerInfo(tower);
+                    this.lastClickTower = tower;
+                    this.lastClickTime = now;
+                }
             }
         }
+    }
+    
+    selectAllTowersOfType(towerType) {
+        this.selectedTowers = this.game.towers.filter(t => t.type === towerType);
+        this.isMultiSelect = true;
+        this.selectedTower = this.selectedTowers[0]; // İlkini ana seçim olarak tut
+        
+        if (this.selectedTowers.length > 0) {
+            this.showMultiTowerInfo();
+        }
+    }
+    
+    showMultiTowerInfo() {
+        const towers = this.selectedTowers;
+        const first = towers[0];
+        const cfg = first.config;
+        
+        // Kaç tanesi upgrade edilebilir
+        const upgradeable = towers.filter(t => t.level < t.maxLevel);
+        const totalUpgradeCost = upgradeable.reduce((sum, t) => sum + t.getUpgradeCost(), 0);
+        const totalSellPrice = towers.reduce((sum, t) => sum + t.getSellPrice(), 0);
+        
+        // UI güncelle
+        document.getElementById('tower-info-icon').textContent = cfg.icon;
+        document.getElementById('tower-info-name').textContent = `${cfg.name} x${towers.length}`;
+        document.getElementById('tower-info-level').textContent = `Toplu Seçim`;
+        document.getElementById('stat-damage').textContent = '-';
+        document.getElementById('stat-range').textContent = '-';
+        document.getElementById('stat-firerate').textContent = '-';
+        
+        const upgradeBtn = document.getElementById('upgrade-btn');
+        const upgradeCost = document.getElementById('upgrade-cost');
+        
+        if (upgradeable.length === 0) {
+            upgradeBtn.disabled = true;
+            upgradeCost.textContent = 'HEPSİ MAX';
+        } else {
+            const canAfford = this.game.gold >= upgradeable[0].getUpgradeCost();
+            upgradeBtn.disabled = !canAfford;
+            upgradeCost.textContent = `💰 ${totalUpgradeCost} (${upgradeable.length})`;
+        }
+        
+        document.getElementById('sell-price').textContent = totalSellPrice;
+        document.getElementById('tower-info-menu')?.classList.remove('hidden');
     }
     
     selectTower(towerType) {
         const cfg = CONFIG.TOWERS[towerType];
         if (!cfg) return;
         
+        // Mevcut seçili kuleyi kapat
+        if (this.selectedTower) {
+            this.closeTowerInfo();
+        }
+        
         if (this.game.gold < cfg.cost) {
-            this.game.showMessage('Yetersiz altın!', '#ff6b6b');
+            this.game.showWarning('Yetersiz altın!');
             return;
         }
         
@@ -245,7 +343,7 @@ class InputHandler {
                               this.game.currentWave + 1 : this.game.currentWave;
         
         if (effectiveWave < cfg.unlockWave) {
-            this.game.showMessage(`Wave ${cfg.unlockWave}'de açılır!`, '#ffaa00');
+            this.game.showWarning(`Wave ${cfg.unlockWave}'de açılır!`);
             return;
         }
         
@@ -291,6 +389,9 @@ class InputHandler {
     
     showTowerInfo(tower) {
         this.selectedTower = tower;
+        this.selectedTowers = [];
+        this.isMultiSelect = false;
+        
         const info = tower.getInfo(this.game.currentDifficulty);
         
         // UI güncelle
@@ -321,35 +422,74 @@ class InputHandler {
     
     closeTowerInfo() {
         this.selectedTower = null;
+        this.selectedTowers = [];
+        this.isMultiSelect = false;
         document.getElementById('tower-info-menu')?.classList.add('hidden');
     }
     
     upgradeTower() {
         if (!this.selectedTower) return;
         
+        // Toplu upgrade modu
+        if (this.isMultiSelect && this.selectedTowers.length > 0) {
+            this.upgradeAllSelectedTowers();
+            return;
+        }
+        
         const cost = this.selectedTower.getUpgradeCost();
         if (!cost || this.game.gold < cost) {
-            this.game.showMessage('Yetersiz altın!', '#ff6b6b');
+            this.game.showWarning('Yetersiz altın!');
             return;
         }
         
         if (this.selectedTower.level >= this.selectedTower.maxLevel) {
-            this.game.showMessage('Maksimum seviye!', '#ffaa00');
+            this.game.showWarning('Maksimum seviye!');
             return;
         }
         
         this.game.gold -= cost;
         this.selectedTower.upgrade();
         this.game.updateUI();
-        this.game.showMessage(`${this.selectedTower.config.icon} Lv.${this.selectedTower.level}!`, '#4ade80');
         soundManager.play('upgrade');
         
         // Info güncelle
         this.showTowerInfo(this.selectedTower);
     }
     
+    upgradeAllSelectedTowers() {
+        const upgradeable = this.selectedTowers.filter(t => t.level < t.maxLevel);
+        let upgraded = 0;
+        
+        // Para yettiği kadar upgrade et
+        for (const tower of upgradeable) {
+            const cost = tower.getUpgradeCost();
+            if (this.game.gold >= cost) {
+                this.game.gold -= cost;
+                tower.upgrade();
+                upgraded++;
+            } else {
+                break; // Para bitti
+            }
+        }
+        
+        if (upgraded > 0) {
+            this.game.updateUI();
+            soundManager.play('upgrade');
+            // Menüyü güncelle
+            this.showMultiTowerInfo();
+        } else {
+            this.game.showWarning('Yetersiz altın!');
+        }
+    }
+    
     sellTower() {
         if (!this.selectedTower) return;
+        
+        // Toplu satış modu
+        if (this.isMultiSelect && this.selectedTowers.length > 0) {
+            this.sellAllSelectedTowers();
+            return;
+        }
         
         const sellPrice = this.selectedTower.getSellPrice(this.game.currentDifficulty);
         const tower = this.selectedTower;
@@ -366,7 +506,31 @@ class InputHandler {
         // Altın ver
         this.game.gold += sellPrice;
         this.game.updateUI();
-        this.game.showMessage(`+${sellPrice} 💰`, '#ffd700');
+        soundManager.play('gold');
+        
+        this.closeTowerInfo();
+    }
+    
+    sellAllSelectedTowers() {
+        let totalSellPrice = 0;
+        
+        for (const tower of this.selectedTowers) {
+            const sellPrice = tower.getSellPrice(this.game.currentDifficulty);
+            
+            // Grid'i boşalt
+            this.game.grid.setCell(tower.col, tower.row, CONFIG.CELL_TYPES.EMPTY);
+            
+            // Kuleyi listeden çıkar
+            const index = this.game.towers.indexOf(tower);
+            if (index > -1) {
+                this.game.towers.splice(index, 1);
+            }
+            
+            totalSellPrice += sellPrice;
+        }
+        
+        this.game.gold += totalSellPrice;
+        this.game.updateUI();
         soundManager.play('gold');
         
         this.closeTowerInfo();

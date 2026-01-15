@@ -4,8 +4,8 @@
  */
 
 const CONFIG = {
-    VERSION: '1.7.5',
-    BUILD: '20250115-13',
+    VERSION: '1.7.7',
+    BUILD: '20250115-15',
     
     CANVAS: { WIDTH: 800, HEIGHT: 600 },
     GRID: { CELL_SIZE: 32, COLS: 25, ROWS: 18 },

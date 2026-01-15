@@ -96,10 +96,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+    padding: 6px 12px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
     color: #fff;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     pointer-events: auto;
@@ -109,21 +109,43 @@ body {
     display: none !important;
 }
 
+#left-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-btn {
+    padding: 4px 8px;
+    font-size: 14px;
+    background: #3a3a5a;
+    border: 2px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #fff;
+    transition: all 0.15s;
+}
+
+.back-btn:hover {
+    border-color: #ff6b6b;
+    background: #4a3a3a;
+}
+
 #center-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .speed-btn {
-    padding: 4px 10px;
-    font-size: 13px;
+    padding: 3px 8px;
+    font-size: 12px;
     font-weight: bold;
     border: 2px solid;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.15s;
-    min-width: 36px;
+    min-width: 32px;
 }
 
 .speed-1x { background: #2a2a4a; border-color: #4a4a6a; color: #fff; }
@@ -134,15 +156,15 @@ body {
 #right-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .sound-btn {
-    padding: 4px 8px;
-    font-size: 16px;
+    padding: 3px 6px;
+    font-size: 14px;
     background: #2a2a4a;
     border: 2px solid #4a4a6a;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.15s;
 }
@@ -216,12 +238,14 @@ body {
    ============================================ */
 #tower-panel {
     position: absolute;
-    top: 55px;
+    top: 45px;
     right: 0;
     display: flex;
     align-items: flex-start;
     pointer-events: auto;
     z-index: 100;
+    max-height: calc(100% - 90px);
+    overflow-y: auto;
 }
 
 #tower-panel.hidden {
@@ -232,14 +256,14 @@ body {
     background: rgba(0, 0, 0, 0.9);
     border: 2px solid #444;
     border-right: none;
-    border-radius: 8px 0 0 8px;
-    padding: 12px 8px;
+    border-radius: 6px 0 0 6px;
+    padding: 8px 6px;
     cursor: pointer;
     color: #ffd700;
-    font-size: 20px;
+    font-size: 16px;
     transition: all 0.2s ease;
     writing-mode: vertical-rl;
-    min-height: 50px;
+    min-height: 40px;
 }
 
 #tower-toggle:hover, #tower-toggle:active {
@@ -249,14 +273,14 @@ body {
 #tower-menu {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     background: rgba(0, 0, 0, 0.9);
-    padding: 12px;
-    border-radius: 0 0 0 12px;
+    padding: 10px;
+    border-radius: 0 0 0 10px;
     border: 2px solid #444;
     border-right: none;
     transition: all 0.3s ease;
-    max-width: 180px;
+    max-width: 160px;
 }
 
 #tower-menu.collapsed {
@@ -284,19 +308,19 @@ body {
     display: none;
 }
 
-/* Kule Seçenekleri - BÜYÜK TOUCH TARGET */
+/* Kule Seçenekleri */
 .tower-option {
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: 12px 14px;
-    min-height: 50px;
+    padding: 8px 10px;
+    min-height: 42px;
     background: #2a2a4a;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
     border: 2px solid transparent;
-    gap: 12px;
+    gap: 8px;
 }
 
 .tower-option:hover, .tower-option:active {
@@ -318,23 +342,23 @@ body {
 .tower-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
 }
 
 .tower-icon { 
-    font-size: 26px; 
+    font-size: 22px; 
     flex-shrink: 0; 
 }
 
 .tower-name { 
     color: #fff; 
-    font-size: 13px; 
+    font-size: 12px; 
     font-weight: bold; 
 }
 
 .tower-cost { 
     color: #ffd700; 
-    font-size: 11px; 
+    font-size: 10px; 
 }
 
 /* Menü Ayırıcı */
@@ -349,14 +373,14 @@ body {
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: 14px;
-    min-height: 54px;
+    padding: 10px;
+    min-height: 44px;
     background: #2ecc71;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
     border: 2px solid transparent;
-    gap: 12px;
+    gap: 8px;
 }
 
 .start-wave-btn:hover, .start-wave-btn:active {
@@ -365,9 +389,8 @@ body {
 }
 
 .start-wave-btn.hidden { display: none; }
-.start-wave-btn .tower-icon { font-size: 22px; }
-.start-wave-btn .tower-name { color: #fff; font-size: 13px; font-weight: bold; }
-.start-wave-btn .tower-cost { color: rgba(255,255,255,0.8); font-size: 11px; }
+.start-wave-btn .tower-icon { font-size: 18px; }
+.start-wave-btn .tower-name { color: #fff; font-size: 12px; font-weight: bold; }
 
 /* ============================================
    ONAY MENÜSÜ - SOL ALT
@@ -503,14 +526,14 @@ body {
    ============================================ */
 #abilities-bar {
     position: absolute;
-    bottom: 10px;
+    bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 10px;
+    gap: 6px;
     background: rgba(0, 0, 0, 0.9);
-    padding: 8px 12px;
-    border-radius: 12px;
+    padding: 5px 8px;
+    border-radius: 8px;
     border: 2px solid #555;
     pointer-events: auto;
     z-index: 100;
@@ -522,17 +545,22 @@ body {
 
 .ability-btn {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     background: #2a2a4a;
     border: 2px solid #444;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
     overflow: hidden;
+}
+
+.ability-icon {
+    font-size: 18px;
+    z-index: 1;
 }
 
 .ability-btn:hover:not(.disabled):not(.on-cooldown) {
@@ -552,11 +580,6 @@ body {
 .ability-btn.selected {
     border-color: #00ff00;
     box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-}
-
-.ability-icon {
-    font-size: 24px;
-    z-index: 1;
 }
 
 .ability-cooldown {
