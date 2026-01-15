@@ -516,6 +516,10 @@ body {
     z-index: 100;
 }
 
+#abilities-bar.hidden {
+    display: none !important;
+}
+
 .ability-btn {
     position: relative;
     width: 50px;

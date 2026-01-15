@@ -381,11 +381,13 @@ class Game {
         document.getElementById('ui-overlay')?.classList.remove('hidden');
         document.getElementById('top-bar')?.classList.remove('hidden');
         document.getElementById('tower-panel')?.classList.remove('hidden');
+        document.getElementById('abilities-bar')?.classList.remove('hidden');
     }
     
     hideGameUI() {
         document.getElementById('top-bar')?.classList.add('hidden');
         document.getElementById('tower-panel')?.classList.add('hidden');
+        document.getElementById('abilities-bar')?.classList.add('hidden');
         document.getElementById('confirm-menu')?.classList.add('hidden');
     }
     
