@@ -3,7 +3,7 @@
  * Offline çalışma ve cache yönetimi
  */
 
-const CACHE_NAME = 'td-game-v1.7.3';
+const CACHE_NAME = 'td-game-v1.7.5';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',

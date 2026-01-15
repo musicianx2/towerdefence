@@ -249,10 +249,8 @@ class Game {
         if (this.isEndless && this.currentWave % 5 === 0) {
             const bonus = 50 + this.currentWave * 5;
             this.gold += bonus;
-            this.showMessage(`🏆 Wave ${this.currentWave}! +${bonus}💰`, '#ffd700', 2500);
-        } else {
-            this.showMessage(`Wave ${this.currentWave} tamamlandı!`, '#00ff00');
         }
+        // Wave tamamlandı mesajı yok - UI'da görünüyor
     }
     
     victory() {
@@ -298,12 +296,12 @@ class Game {
     placeTower(col, row, towerType) {
         const cfg = CONFIG.TOWERS[towerType];
         if (!cfg || this.gold < cfg.cost) {
-            this.showMessage('Yetersiz altın!', '#ff6b6b');
+            this.showWarning('Yetersiz altın!');
             return false;
         }
         
         if (!this.availableTowers.includes(towerType)) {
-            this.showMessage('Bu kule bu haritada yok!', '#ff6b6b');
+            this.showWarning('Bu kule bu haritada yok!');
             return false;
         }
         
@@ -312,7 +310,8 @@ class Game {
         
         this.gold -= cfg.cost;
         this.towers.push(tower);
-        this.showMessage(`${cfg.name} yerleştirildi!`, '#00ff00');
+        // Kule yerleştirildi - mesaj göstermeye gerek yok
+        // Görsel feedback yeterli
         soundManager.play('towerPlace');
         return true;
     }
@@ -416,13 +415,13 @@ class Game {
         
         // Cooldown kontrolü
         if (this.abilityCooldowns[abilityId] && now < this.abilityCooldowns[abilityId]) {
-            this.showMessage('Yetenek hazır değil!', '#ff6b6b');
+            this.showWarning('Yetenek hazır değil!');
             return false;
         }
         
         // Altın kontrolü
         if (this.gold < cfg.cost) {
-            this.showMessage('Yetersiz altın!', '#ff6b6b');
+            this.showWarning('Yetersiz altın!');
             return false;
         }
         
@@ -470,7 +469,7 @@ class Game {
             }
         }
         
-        this.showMessage(`☄️ Meteor! ${hitCount} düşmana hasar!`, '#ff4500');
+        // Başarı mesajı yok - görsel efekt yeterli
         soundManager.play('explosion');
         return true;
     }
@@ -483,32 +482,41 @@ class Game {
             count++;
         }
         
-        this.showMessage(`🌊 ${count} düşman yavaşladı!`, '#00bfff');
+        // Başarı mesajı yok - görsel efekt yeterli
         soundManager.play('ability');
         return true;
     }
     
     useGoldRush(cfg) {
         this.gold += cfg.goldBonus;
-        this.showMessage(`💎 +${cfg.goldBonus} Altın!`, '#ffd700');
+        // Başarı mesajı yok - UI'da görünüyor
         soundManager.play('gold');
         return true;
     }
     
     useRepair(cfg) {
         if (this.lives >= this.currentDifficulty.startingLives) {
-            this.showMessage('Can zaten dolu!', '#ffaa00');
+            this.showWarning('Can zaten dolu!');
             return false;
         }
         
         this.lives = Math.min(this.lives + cfg.healAmount, this.currentDifficulty.startingLives);
-        this.showMessage(`🔧 +${cfg.healAmount} Can!`, '#4ade80');
+        // Başarı mesajı yok - görsel feedback yeterli
         soundManager.play('ability');
         return true;
     }
     
+    // Sadece uyarı/hata mesajları için - köşede küçük
+    showWarning(message, duration = 2000) {
+        this.currentMessage = { text: message, color: '#ff6b6b', isWarning: true };
+        if (this.messageTimeout) clearTimeout(this.messageTimeout);
+        this.messageTimeout = setTimeout(() => this.currentMessage = null, duration);
+    }
+    
+    // Önemli bilgi mesajları için (wave, zafer, vs)
     showMessage(message, color = '#fff', duration = 2000) {
-        this.currentMessage = { text: message, color };
+        // Sadece önemli mesajları göster
+        this.currentMessage = { text: message, color, isWarning: false };
         if (this.messageTimeout) clearTimeout(this.messageTimeout);
         this.messageTimeout = setTimeout(() => this.currentMessage = null, duration);
     }
@@ -553,7 +561,11 @@ class Game {
         }
         
         if (this.currentMessage) {
-            this.renderer.drawMessage(this.currentMessage.text, this.currentMessage.color);
+            this.renderer.drawMessage(
+                this.currentMessage.text, 
+                this.currentMessage.color,
+                this.currentMessage.isWarning
+            );
         }
         
         this.renderer.drawFPS(this.fps);

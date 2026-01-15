@@ -329,21 +329,43 @@ class Renderer {
         this.ctx.fillText(`⏱️ Kule yerleştir! Kalan: ${Math.ceil(seconds)}s`, cx, cy);
     }
     
-    drawMessage(message, color) {
-        const cx = this.canvas.width / 2, cy = this.canvas.height / 2;
-        this.ctx.font = 'bold 24px Arial';
-        const tw = this.ctx.measureText(message).width;
-        this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        this.ctx.beginPath();
-        this.ctx.roundRect(cx - tw / 2 - 30, cy - 30, tw + 60, 60, 10);
-        this.ctx.fill();
-        this.ctx.strokeStyle = color;
-        this.ctx.lineWidth = 3;
-        this.ctx.stroke();
-        this.ctx.fillStyle = color;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(message, cx, cy);
+    drawMessage(message, color, isWarning = false) {
+        if (isWarning) {
+            // Uyarı mesajları - sol alt köşede küçük
+            const x = 120, y = this.canvas.height - 60;
+            this.ctx.font = 'bold 14px Arial';
+            const tw = this.ctx.measureText(message).width;
+            
+            this.ctx.fillStyle = 'rgba(0,0,0,0.85)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(x - 10, y - 12, tw + 20, 24, 6);
+            this.ctx.fill();
+            
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+            
+            this.ctx.fillStyle = color;
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(message, x, y);
+        } else {
+            // Önemli mesajlar (zafer, yenilgi) - ortada büyük
+            const cx = this.canvas.width / 2, cy = this.canvas.height / 2;
+            this.ctx.font = 'bold 24px Arial';
+            const tw = this.ctx.measureText(message).width;
+            this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            this.ctx.beginPath();
+            this.ctx.roundRect(cx - tw / 2 - 30, cy - 30, tw + 60, 60, 10);
+            this.ctx.fill();
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
+            this.ctx.fillStyle = color;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(message, cx, cy);
+        }
     }
     
     drawEnemyCount(count) {
